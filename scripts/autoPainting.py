@@ -11,6 +11,39 @@ if os.environ.get('ROS_DISTRO', 'hydro')[0] <= 'f':
 
 import argparse, herbpy, logging, numpy, openravepy, sys
 
+
+def ConvertPlanToTrajectory(self, plan):
+
+        # Create a trajectory
+        traj = openravepy.RaveCreateTrajectory(self.robot.GetEnv(), 'GenericTrajectory')
+        config_spec = self.robot.GetActiveConfigurationSpecification()
+        traj.Init(config_spec)
+
+        idx = 0
+        for pt in plan:
+            traj.Insert(idx, pt)
+            idx = idx + 1
+
+        openravepy.planningutils.RetimeActiveDOFTrajectory(traj, self.robot, maxvelmult=1, maxaccelmult=1, hastimestamps=False, plannername='ParabolicTrajectoryRetimer')
+
+        return traj
+
+def planSpecial():
+    
+    rName = robot.GetName()
+    with prpy.Clone(env) as cloned_env:
+        r = prpy.Cloned(robot)
+        traj1 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
+        config = traj1.GetWaypoint(1)
+        r.right_arm.SetDOFValues(config)
+        traj2 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
+
+
+
+
+    traj2a = prpy.util.CopyTrajectory(traj2,env=env)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='utility script for loading HerbPy')
     parser.add_argument('-s', '--sim', action='store_true',
@@ -45,6 +78,7 @@ if __name__ == "__main__":
         herbpy_args['segway_sim'] = args.sim
     
     env, robot = herbpy.initialize(**herbpy_args)
+
 
     import IPython
     IPython.embed()
