@@ -29,7 +29,49 @@ def ConvertPlanToTrajectory(self, plan):
 
         return traj
 
-#class DrawIngObject
+
+
+def getXRotation(radians):
+    rx = numpy.eye(4)
+    cs = math.cos(radians)
+    sn = math.sin(radians) 
+    rx[1][1] = cs
+    rx[2][2] = cs
+    rx[2][1] = sn
+    rx[1][2] = -1 * sn
+    return rx
+
+
+def getYRotation(radians):
+    ry = numpy.eye(4)
+    cs = math.cos(radians)
+    sn = math.sin(radians) 
+    ry[0][0] = cs
+    ry[2][2] = cs
+    ry[0][2] = sn
+    ry[2][0] = -1 * sn
+    return ry
+
+
+def getZRotation(radians):
+    rz = numpy.eye(4)
+    cs = math.cos(radians)
+    sn = math.sin(radians) 
+    rz[0][0] = cs
+    rz[1][1] = cs
+    rz[0][1] = -1 * sn
+    rz[1][0] = sn
+    return rz
+
+
+
+def getTransformFromPlane(normalUnitVector):
+    px = normalUnitVector[0]
+    py = normalUnitVector[1]
+    pz = normalUnitVector[2]
+    return getYRotation(0.1)
+    
+    
 
 class DrawingManager(object):
     def __init__(self,robot,arm,plane,canvasCenter,canvasSize):
@@ -43,8 +85,9 @@ class DrawingManager(object):
         self.normalVectorUnit = plane/dist
         self.canvasOffset = 0.05
         self.currentCanvasPose = None
-    def _NextPoint(self,x,y):
-        pass
+
+        
+        self.tf = getTransformFromPlane(self.normalVectorUnit)
 
     def _MoveToInitialPreDraw(self):
         armLocation = self.canvasCenter + self.normalVectorUnit * -self.canvasOffset
@@ -59,6 +102,19 @@ class DrawingManager(object):
     def _MoveAcrossCanvas(self,x,y):
         delta = self.currentCanvasPose - numpy.array([x,y])
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
+
+        pt = numpy.array([x,y,0,1])
+        newPt = numpy.dot(self.tf,pt)
+        pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
+        oldPt = numpy.dot(self.tf,pt)
+
+        vector = oldPt - newPt
+        
+        self.currentCanvasPose = [x,y]
+        return self.arm.PlanToEndEffectorOffset(vector,dist)
+        
+        
+
 
         
         
