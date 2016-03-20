@@ -76,9 +76,15 @@ def getTransformFromPlane(normalUnitVector):
 class DrawingManager(object):
     def __init__(self,robot,arm,plane,canvasCenter,canvasSize):
         self.arm = arm
-        self.arm = arm
+
+        if robot.right_arm is arm:
+            self.armString = "Right"
+        else:
+            self.armString = "Left"
         self.robot = robot
         self.plane = plane
+        self.Realrobot = robot
+        self.Realplane = plane
         self.canvasCenter = canvasCenter
         self.canvasSize = canvasSize
         dist = math.sqrt(math.pow(plane[0],2) + math.pow(plane[1],2) + math.pow(plane[2],2))
@@ -89,6 +95,8 @@ class DrawingManager(object):
         
         self.tf = getTransformFromPlane(self.normalVectorUnit)
 
+            
+            
     def _MoveToInitialPreDraw(self):
         armLocation = self.canvasCenter + self.normalVectorUnit * -self.canvasOffset
         tf = numpy.eye(4)
@@ -96,24 +104,22 @@ class DrawingManager(object):
         tf[1][3] = armLocation[1]
         tf[2][3] = armLocation[2]
         self.currentCanvasPose = canvasSize/2.0
-        self.arm.PlanToEndEffectorPose(tf,execute=True)
+        traj = self.arm.PlanToEndEffectorPose(tf)
         
 
-    def _MoveAcrossCanvas(self,x,y):
-        delta = self.currentCanvasPose - numpy.array([x,y])
+    def _MoveAcrossCanvas(self,point):
+        delta = self.currentCanvasPose - point
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
 
-        pt = numpy.array([x,y,0,1])
+        pt = numpy.array([point[0],point[1],0,1])
         newPt = numpy.dot(self.tf,pt)
         pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
         oldPt = numpy.dot(self.tf,pt)
 
         vector = oldPt - newPt
         
-        self.currentCanvasPose = [x,y]
+        self.currentCanvasPose = point
         return self.arm.PlanToEndEffectorOffset(vector,dist)
-        
-        
 
 
         
@@ -121,20 +127,59 @@ class DrawingManager(object):
     def _MoveToCanvas(self):
         return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,self.canvasOffset)
 
+    def _MoveAwayFromCanvas(self):
+        return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,-1*self.canvasOffset)
+
     
-    def Draw(self,path):
+    def Draw(self,points):
+       
+        #Move to the offset center of the plane
+        initalPreDrawPath = self._MoveToInitialPreDraw()        
+        robot.ExecutePath(initalPreDrawPath)
+
+        #Move to the initial point of the path
+        initial = points[0]
+        robot.ExecutePath(self._MoveAcrossCanvas(initial))
     
-        rName = robot.GetName()
+        #Save real arms
+        realRobot = self.robot
+        realArm = self.arm
+
+        trajs = []
         with prpy.Clone(env) as cloned_env:
-            r = prpy.Cloned(robot)
-            traj1 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
-            num = traj1.GetNumOfWaypoints()
-            config = traj1.GetWaypoint(num-1)
-            r.right_arm.SetDOFValues(config)
-            traj2 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
+            
+            self.robot = prpy.Cloned(robot)
+            if self.armString == "Right":
+                self.arm = self.robot.right_arm
+            else:
+                self.arm = self.robot.left_arm
+
+            trajs.append(self._MoveToCanvas())
+
+            for x in xrange(len(points) -1):
+                index = x + 1
+                trajs.append(self._MoveAcrossCanvas(points[x]))
 
 
+            trajs.append(self._MoveAwayFromCanvas())
 
+        #Reset
+        self.robot = realRobot
+        self.arm = realArm        
+
+     
+#            rName = robot.GetName()
+#            with prpy.Clone(env) as cloned_env:
+#                r = prpy.Cloned(robot)
+#                traj1 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
+#                num = traj1.GetNumOfWaypoints()
+#                config = traj1.GetWaypoint(num-1)
+#                r.right_arm.SetDOFValues(config)
+#                traj2 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
+#
+
+
+        trajs.append(self._MoveAwayFromCanvas())
 
         traj2a = prpy.util.CopyTrajectory(traj2,env=env)
 
@@ -173,6 +218,15 @@ if __name__ == "__main__":
         herbpy_args['segway_sim'] = args.sim
     
     env, robot = herbpy.initialize(**herbpy_args)
+
+    #Add in canvas cube
+    from openravepy import *
+    body = RaveCreateKinBody(env,'')
+    body.SetName('testbody')
+    body.InitFromBoxes(numpy.array([[0.6,0,1,0.01,0.2,0.3]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
+    env.AddKinBody(body)
+
+
 
     #Todo make center expressed in meters
     dm = DrawingManager(robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([11.5,9]))
