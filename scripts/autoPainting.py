@@ -10,6 +10,7 @@ if os.environ.get('ROS_DISTRO', 'hydro')[0] <= 'f':
     roslib.load_manifest('herbpy')
 
 import argparse, herbpy, logging, numpy, openravepy, sys
+import math
 
 
 def ConvertPlanToTrajectory(self, plan):
@@ -28,20 +29,57 @@ def ConvertPlanToTrajectory(self, plan):
 
         return traj
 
-def planSpecial():
+#class DrawIngObject
+
+class DrawingManager(object):
+    def __init__(self,robot,arm,plane,canvasCenter,canvasSize):
+        self.arm = arm
+        self.arm = arm
+        self.robot = robot
+        self.plane = plane
+        self.canvasCenter = canvasCenter
+        self.canvasSize = canvasSize
+        dist = math.sqrt(math.pow(plane[0],2) + math.pow(plane[1],2) + math.pow(plane[2],2))
+        self.normalVectorUnit = plane/dist
+        self.canvasOffset = 0.05
+        self.currentCanvasPose = None
+    def _NextPoint(self,x,y):
+        pass
+
+    def _MoveToInitialPreDraw(self):
+        armLocation = self.canvasCenter + self.normalVectorUnit * -self.canvasOffset
+        tf = numpy.eye(4)
+        tf[0][3] = armLocation[0]
+        tf[1][3] = armLocation[1]
+        tf[2][3] = armLocation[2]
+        self.currentCanvasPose = canvasSize/2.0
+        self.arm.PlanToEndEffectorPose(tf,execute=True)
+        
+
+    def _MoveAcrossCanvas(self,x,y):
+        delta = self.currentCanvasPose - numpy.array([x,y])
+        dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
+        
+        
+    def _MoveToCanvas(self):
+        return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,self.canvasOffset)
+
     
-    rName = robot.GetName()
-    with prpy.Clone(env) as cloned_env:
-        r = prpy.Cloned(robot)
-        traj1 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
-        config = traj1.GetWaypoint(1)
-        r.right_arm.SetDOFValues(config)
-        traj2 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
+    def Draw(self,path):
+    
+        rName = robot.GetName()
+        with prpy.Clone(env) as cloned_env:
+            r = prpy.Cloned(robot)
+            traj1 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
+            num = traj1.GetNumOfWaypoints()
+            config = traj1.GetWaypoint(1)
+            r.right_arm.SetDOFValues(config)
+            traj2 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
 
 
 
 
-    traj2a = prpy.util.CopyTrajectory(traj2,env=env)
+        traj2a = prpy.util.CopyTrajectory(traj2,env=env)
 
 
 if __name__ == "__main__":
@@ -79,6 +117,7 @@ if __name__ == "__main__":
     
     env, robot = herbpy.initialize(**herbpy_args)
 
-
+    #Todo make center expressed in meters
+    dm = DrawingManager(robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array[11.5,9]))
     import IPython
     IPython.embed()
