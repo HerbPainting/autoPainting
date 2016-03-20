@@ -59,6 +59,7 @@ class DrawingManager(object):
     def _MoveAcrossCanvas(self,x,y):
         delta = self.currentCanvasPose - numpy.array([x,y])
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
+
         
         
     def _MoveToCanvas(self):
@@ -72,7 +73,7 @@ class DrawingManager(object):
             r = prpy.Cloned(robot)
             traj1 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
             num = traj1.GetNumOfWaypoints()
-            config = traj1.GetWaypoint(1)
+            config = traj1.GetWaypoint(num-1)
             r.right_arm.SetDOFValues(config)
             traj2 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
 
@@ -118,6 +119,6 @@ if __name__ == "__main__":
     env, robot = herbpy.initialize(**herbpy_args)
 
     #Todo make center expressed in meters
-    dm = DrawingManager(robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array[11.5,9]))
+    dm = DrawingManager(robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([11.5,9]))
     import IPython
     IPython.embed()
