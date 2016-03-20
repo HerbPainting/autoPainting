@@ -12,6 +12,9 @@ if os.environ.get('ROS_DISTRO', 'hydro')[0] <= 'f':
 import argparse, herbpy, logging, numpy, openravepy, sys
 import math
 
+import prpy
+import prpy.util
+
 
 def ConvertPlanToTrajectory(self, plan):
 
@@ -74,8 +77,9 @@ def getTransformFromPlane(normalUnitVector):
     
 
 class DrawingManager(object):
-    def __init__(self,robot,arm,plane,canvasCenter,canvasSize):
+    def __init__(self,env,robot,arm,plane,canvasCenter,canvasSize):
         self.arm = arm
+        self.env = env
 
         if robot.right_arm is arm:
             self.armString = "Right"
@@ -103,23 +107,45 @@ class DrawingManager(object):
         tf[0][3] = armLocation[0]
         tf[1][3] = armLocation[1]
         tf[2][3] = armLocation[2]
-        self.currentCanvasPose = canvasSize/2.0
-        traj = self.arm.PlanToEndEffectorPose(tf)
+        self.currentCanvasPose = self.canvasSize/2.0
+        return self.arm.PlanToEndEffectorPose(tf)
         
 
     def _MoveAcrossCanvas(self,point):
         delta = self.currentCanvasPose - point
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
 
-        pt = numpy.array([point[0],point[1],0,1])
-        newPt = numpy.dot(self.tf,pt)
-        pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
-        oldPt = numpy.dot(self.tf,pt)
+       # pt = numpy.array([point[0],point[1],0])
+       # newPt = self.canvasCenter * numpy.dot(self.tf,pt)
+       # pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
+       # oldPt = self.canvasCenter * numpy.dot(self.tf,pt)
+        Size3d = numpy.array([self.canvasSize[0],self.canvasSize[1],0])
+        canvasOrigin = numpy.array(self.canvasCenter - Size3d/2.0)
+       # pt = numpy.array([point[0],point[1],0])
+       # newPt = self.canvasCenter +numpy.dot(self.tf,pt)
+       # pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
+       # oldPt = self.canvasCenter * numpy.dot(self.tf,pt)
 
+        realPose = numpy.array([0,self.currentCanvasPose[0],self.currentCanvasPose[1]])
+        realNew = numpy.array([0,point[0],point[1]])
+        oldPt = realPose + canvasOrigin
+        newPt = realNew + canvasOrigin
         vector = oldPt - newPt
+
+        vector = numpy.array([vector[0],vector[1],vector[2]])
         
         self.currentCanvasPose = point
-        return self.arm.PlanToEndEffectorOffset(vector,dist)
+        print vector
+        print dist
+
+        normalizedVector = vector / math.sqrt(math.pow(vector[0],2) + math.pow(vector[1],2) + math.pow(vector[2],2))
+
+        print normalizedVector
+        print normalizedVector
+        print dist
+        #import IPython
+        #IPython.embed()
+        return self.arm.PlanToEndEffectorOffset(normalizedVector,dist)
 
 
         
@@ -128,7 +154,7 @@ class DrawingManager(object):
         return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,self.canvasOffset)
 
     def _MoveAwayFromCanvas(self):
-        return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,-1*self.canvasOffset)
+        return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,self.canvasOffset)
 
     
     def Draw(self,points):
@@ -155,18 +181,37 @@ class DrawingManager(object):
                 self.arm = self.robot.left_arm
 
             trajs.append(self._MoveToCanvas())
-
+            self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
             for x in xrange(len(points) -1):
                 index = x + 1
-                trajs.append(self._MoveAcrossCanvas(points[x]))
+                print points
+                print points[index]
+                print index
+                trajs.append(self._MoveAcrossCanvas(points[index]))
+                self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
 
 
             trajs.append(self._MoveAwayFromCanvas())
+
+
+        totalTraj = trajs[0]
+
+        idx = totalTraj.GetNumWaypoints()
+        for x in xrange(len(trajs)-1):
+            index = x + 1
+            for ptIndex in xrange(trajs[x].GetNumWaypoints()):
+                totalTraj.Insert(idx,trajs[x].GetWaypoint(ptIndex))
+                idx = idx + 1
+            
 
         #Reset
         self.robot = realRobot
         self.arm = realArm        
 
+        performTraj = prpy.util.CopyTrajectory(totalTraj,env=robot.GetEnv())
+        robot.ExecutePath(performTraj)
+        
+        #traj2a = prpy.util.CopyTrajectory(traj2,env=env)
      
 #            rName = robot.GetName()
 #            with prpy.Clone(env) as cloned_env:
@@ -179,9 +224,9 @@ class DrawingManager(object):
 #
 
 
-        trajs.append(self._MoveAwayFromCanvas())
+        #trajs.append(self._MoveAwayFromCanvas())
 
-        traj2a = prpy.util.CopyTrajectory(traj2,env=env)
+        #traj2a = prpy.util.CopyTrajectory(traj2,env=env)
 
 
 if __name__ == "__main__":
@@ -220,15 +265,17 @@ if __name__ == "__main__":
     env, robot = herbpy.initialize(**herbpy_args)
 
     #Add in canvas cube
-    from openravepy import *
-    body = RaveCreateKinBody(env,'')
-    body.SetName('testbody')
-    body.InitFromBoxes(numpy.array([[0.6,0,1,0.01,0.2,0.3]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
-    env.AddKinBody(body)
+    #from openravepy import *
+    #body = RaveCreateKinBody(env,'')
+    #body.SetName('testbody')
+    #body.InitFromBoxes(numpy.array([[0.6,0,1,0.01,0.2,0.3]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
+    #env.AddKinBody(body)
 
 
 
     #Todo make center expressed in meters
-    dm = DrawingManager(robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([11.5,9]))
+    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([0.2,0.2]))
+
+    pathSquare  = [numpy.array([0,0]),numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()
