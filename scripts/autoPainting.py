@@ -74,7 +74,7 @@ def getTransformFromPlane(normalUnitVector):
     
 
 class DrawingManager(object):
-    def __init__(self,robot,arm,plane,canvasCenter,canvasSize):
+    def __init__(self,robot,arm,plane,canvasCenter,canvasSize, body):
         self.arm = arm
 
         if robot.right_arm is arm:
@@ -91,12 +91,13 @@ class DrawingManager(object):
         self.normalVectorUnit = plane/dist
         self.canvasOffset = 0.05
         self.currentCanvasPose = None
-
+        self.easel = body
         
         self.tf = getTransformFromPlane(self.normalVectorUnit)
 
             
             
+
     def _MoveToInitialPreDraw(self):
         armLocation = self.canvasCenter + self.normalVectorUnit * -self.canvasOffset
         tf = numpy.eye(4)
@@ -117,9 +118,10 @@ class DrawingManager(object):
         oldPt = numpy.dot(self.tf,pt)
 
         vector = oldPt - newPt
-        
+        tfeaseltoWorld = self.easel.GetTransform()
+        vector_move = numpy.dot(tfeaseltoWorld, vector)
         self.currentCanvasPose = point
-        return self.arm.PlanToEndEffectorOffset(vector,dist)
+        return self.arm.PlanToEndEffectorOffset(vector_move,dist)
 
 
         
@@ -229,6 +231,6 @@ if __name__ == "__main__":
 
 
     #Todo make center expressed in meters
-    dm = DrawingManager(robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([11.5,9]))
+    dm = DrawingManager(robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([11.5,9]), body)
     import IPython
     IPython.embed()
