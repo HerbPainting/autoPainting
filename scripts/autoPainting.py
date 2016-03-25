@@ -108,6 +108,7 @@ class DrawingManager(object):
         tf[1][3] = armLocation[1]
         tf[2][3] = armLocation[2]
         self.currentCanvasPose = self.canvasSize/2.0
+        tf = numpy.dot(tf,getYRotation(1.7))
         return self.arm.PlanToEndEffectorPose(tf)
         
 
@@ -158,7 +159,9 @@ class DrawingManager(object):
 
     
     def Draw(self,points):
-       
+     
+
+
         #Move to the offset center of the plane
         initalPreDrawPath = self._MoveToInitialPreDraw()        
         robot.ExecutePath(initalPreDrawPath)
@@ -191,7 +194,7 @@ class DrawingManager(object):
                 self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
 
 
-            trajs.append(self._MoveAwayFromCanvas())
+            #trajs.append(self._MoveAwayFromCanvas())
 
 
         totalTraj = trajs[0]
@@ -209,7 +212,16 @@ class DrawingManager(object):
         self.arm = realArm        
 
         performTraj = prpy.util.CopyTrajectory(totalTraj,env=robot.GetEnv())
+
+
+        origLimits = self.arm.GetVelocityLimits()
+        limits = origLimits/2
+        self.arm.SetVelocityLimits(limits,self.arm.GetIndices())
+
         robot.ExecutePath(performTraj)
+	
+        self.arm.SetVelocityLimits(origLimits,self.arm.GetIndices())
+
         
         #traj2a = prpy.util.CopyTrajectory(traj2,env=env)
      
@@ -265,17 +277,49 @@ if __name__ == "__main__":
     env, robot = herbpy.initialize(**herbpy_args)
 
     #Add in canvas cube
-    #from openravepy import *
-    #body = RaveCreateKinBody(env,'')
-    #body.SetName('testbody')
-    #body.InitFromBoxes(numpy.array([[0.6,0,1,0.01,0.2,0.3]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
-    #env.AddKinBody(body)
+    from openravepy import *
+    body1 = RaveCreateKinBody(env,'')
+    body1.SetName('canvas')
+    body1.InitFromBoxes(numpy.array([[0,0,0,0.01,0.2,0.3]]),True) # [x,y,z,size_x,size_y,size_z]  canvas
+    env.AddKinBody(body1)
+    body2 = RaveCreateKinBody(env,'')
+    body2.SetName('Brush')
+    body2.InitFromBoxes(numpy.array([[0,0,0,0.01,0.01,0.1]]),True) #[xb,y,z,size_x,size_y,size_z]   brush
+    env.AddKinBody(body2)
+# brush to hand and grab brush
+    arm_transform= robot.right_arm.GetTransform()
+    Palm_direction= arm_transform[0:3,2]
+    Palm_direction= 0.18* Palm_direction
+    arm_transform[0:3,3]+= Palm_direction
+    body2.SetTransform(arm_transform)
+    robot.right_arm.hand.CloseHand()
+    robot.right_arm.SetActive()
+    robot.Grab(body2)
+
+    for igeom,geom in enumerate(body1.GetLinks()[0].GetGeometries()):
+        color = numpy.array([1,0.,0])
+        geom.SetDiffuseColor(color)
+
+    for igeom,geom in enumerate(body2.GetLinks()[0].GetGeometries()):
+        color = numpy.array([0,0.,1])
+        geom.SetDiffuseColor(color)
+
+# place canvas
+
+    robot_transform=robot.GetTransform()
+    robot_transform[0:3,3]= [0.90,0,1]
+    #robot_transform[0:3,3]= [1.95,0,1]
+    body1.SetTransform(robot_transform)
+
+    import trajoptpy  
+    cc = trajoptpy.GetCollisionChecker(env)
+    cc.ExcludeCollisionPair(body1.GetLinks()[0],body2.GetLinks()[0])
 
 
 
     #Todo make center expressed in meters
     dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([0.2,0.2]))
 
-    pathSquare  = [numpy.array([0,0]),numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
+    pathSquare  = [numpy.array([0.101,0.101]),numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()
