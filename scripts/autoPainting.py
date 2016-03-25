@@ -202,8 +202,8 @@ class DrawingManager(object):
         idx = totalTraj.GetNumWaypoints()
         for x in xrange(len(trajs)-1):
             index = x + 1
-            for ptIndex in xrange(trajs[x].GetNumWaypoints()):
-                totalTraj.Insert(idx,trajs[x].GetWaypoint(ptIndex))
+            for ptIndex in xrange(trajs[index].GetNumWaypoints()):
+                totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
                 idx = idx + 1
             
 
@@ -320,6 +320,6 @@ if __name__ == "__main__":
     #Todo make center expressed in meters
     dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([0.2,0.2]))
 
-    pathSquare  = [numpy.array([0.101,0.101]),numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
+    pathSquare  = [numpy.array([0.1001,0.1001]),numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()
