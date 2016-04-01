@@ -99,7 +99,10 @@ class DrawingManager(object):
         
         self.tf = getTransformFromPlane(self.normalVectorUnit)
 
-            
+    
+    def _PlanToEndEffectorPose(self,tf):
+        realtf = numpy.dot(self.robot.GetTransform(),tf)
+        return self.arm.PlanToEndEffectorPose(realtf)
             
     def _MoveToInitialPreDraw(self):
         armLocation = self.canvasCenter + self.normalVectorUnit * -self.canvasOffset
@@ -109,7 +112,7 @@ class DrawingManager(object):
         tf[2][3] = armLocation[2]
         self.currentCanvasPose = self.canvasSize/2.0
         tf = numpy.dot(tf,getYRotation(1.7))
-        return self.arm.PlanToEndEffectorPose(tf)
+        return self._PlanToEndEffectorPose(tf)
         
 
     def _MoveAcrossCanvas(self,point):
