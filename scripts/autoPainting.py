@@ -68,16 +68,58 @@ def getZRotation(radians):
 
 
 
-def getTransformFromPlane(normalUnitVector):
-    px = normalUnitVector[0]
-    py = normalUnitVector[1]
-    pz = normalUnitVector[2]
-    return getYRotation(0.1)
+def getTransformFromPlane(normalUnitVector,canvasCorner):
+    a = normalUnitVector[0]
+    b = normalUnitVector[1]
+    c = normalUnitVector[2]
+
+
+
+    y = ( -b*1-c*0 ) / a * -1
+    z = ( -b*0-c*1 ) / a * -1
+    #z = ( -a*1-b*0 ) / c
+    
+    if math.isnan(y):
+        tfRy = numpy.eye(4)
+    else:
+        tfRy = getYRotation(math.atan(y))
+
+    #if math.isnan(x):
+    #    tfRx = numpy.eye(4)
+    #else:
+    #    tfRx = getXRotation(math.atan(x))
+    
+    if math.isnan(z):
+        tfRz = numpy.eye(4)
+    else:
+        tfRz = getZRotation(math.atan(z))
+    #print math.atan(x)
+    print math.atan(y)
+    print math.atan(z)
+    #tfRy = numpy.eye(4)
+    tfRx = numpy.eye(4)
+    #tfRz = numpy.eye(4)
+    #tfRx = getXRotation(0.8)
+    #tfRy = getYRotation(0.4)
+    #tfRz = getZRotation(0.4)
+    tf = numpy.eye(4)
+
+    tf[0][3] = canvasCorner[0]
+    tf[1][3] = canvasCorner[1]
+    tf[2][3] = canvasCorner[2]
+    
+    #return getYRotation(0.1)
+
+    print tf
+    
+    final = numpy.dot(tf,numpy.dot(numpy.dot(tfRy,tfRz),tfRx))
+    print final
+    return final
     
     
 
 class DrawingManager(object):
-    def __init__(self,env,robot,arm,plane,canvasCenter,canvasSize):
+    def __init__(self,env,robot,arm,plane,canvasCorner,canvasSize):
         self.arm = arm
         self.env = env
 
@@ -89,7 +131,7 @@ class DrawingManager(object):
         self.plane = plane
         self.Realrobot = robot
         self.Realplane = plane
-        self.canvasCenter = canvasCenter
+        self.canvasCorner = canvasCorner
         self.canvasSize = canvasSize
         dist = math.sqrt(math.pow(plane[0],2) + math.pow(plane[1],2) + math.pow(plane[2],2))
         self.normalVectorUnit = plane/dist
@@ -97,7 +139,7 @@ class DrawingManager(object):
         self.currentCanvasPose = None
 
         
-        self.tf = getTransformFromPlane(self.normalVectorUnit)
+        self.tf = getTransformFromPlane(self.normalVectorUnit,canvasCorner)
 
     
     def _PlanToEndEffectorPose(self,tf):
@@ -105,20 +147,80 @@ class DrawingManager(object):
         return self.arm.PlanToEndEffectorPose(realtf)
             
     def _MoveToInitialPreDraw(self):
-        armLocation = self.canvasCenter + self.normalVectorUnit * -self.canvasOffset
+        size = numpy.array([self.canvasSize[0],self.canvasSize[1],0])
+        center = self.canvasCorner + size/2.0
+        
+        normalTf = numpy.eye(4)
+
+        normalTf[0][3] = self.normalVectorUnit[0]
+        normalTf[1][3] = self.normalVectorUnit[1]
+        normalTf[2][3] = self.normalVectorUnit[2]
+        
+        rtf = self.robot.GetTransform()
+        rtf[0][3] = 0
+        rtf[1][3] = 0
+        rtf[2][3] = 0
+        
+        tNorm = numpy.dot(rtf,normalTf)
+        newNormalVector = numpy.array([tNorm[0][3],tNorm[1][3],tNorm[2][3]])
+        armLocation = center + newNormalVector * -self.canvasOffset
         tf = numpy.eye(4)
         tf[0][3] = armLocation[0]
         tf[1][3] = armLocation[1]
         tf[2][3] = armLocation[2]
-        self.currentCanvasPose = self.canvasSize/2.0
-        tf = numpy.dot(tf,getYRotation(1.7))
+        self.currentCanvasPose = numpy.array([0,0])
+        tf = numpy.dot(tf,getYRotation(math.pi/2))
+        print tf
         return self._PlanToEndEffectorPose(tf)
         
 
     def _MoveAcrossCanvas(self,point):
         delta = self.currentCanvasPose - point
+        print "Delta a"
+        print delta
+        print self.currentCanvasPose
+        print point
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
+        rTf = self.robot.GetTransform()
 
+        currentPointTF=numpy.eye(4)
+
+        currentPointTF[1][3] = self.currentCanvasPose[0]
+        currentPointTF[2][3] = self.currentCanvasPose[1]
+
+        newPointTF=numpy.eye(4)
+
+        newPointTF[1][3] = point[0]
+        newPointTF[2][3] = point[1]
+
+
+        realCurrentPoint = numpy.dot(numpy.dot(rTf,self.tf),currentPointTF)
+        realNewPoint = numpy.dot(numpy.dot(rTf,self.tf),newPointTF)
+
+        print "RealCurrentPoint"
+        print realCurrentPoint
+        print "RealNewPoint"
+        print realNewPoint
+
+
+        
+        vectorizeTF = lambda a: numpy.array( [ a[0][3],a[1][3],a[2][3] ] )
+        newVector = vectorizeTF(realNewPoint)
+        currentVector = vectorizeTF(realCurrentPoint)
+
+        delta = currentVector-newVector
+        print "DELTA"
+        print delta
+        d = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2))
+        print d
+        normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
+
+        print "Normal Delta"
+
+        self.currentCanvasPose = point
+
+        return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
+        
        # pt = numpy.array([point[0],point[1],0])
        # newPt = self.canvasCenter * numpy.dot(self.tf,pt)
        # pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
@@ -149,13 +251,33 @@ class DrawingManager(object):
         print dist
         #import IPython
         #IPython.embed()
-        return self.arm.PlanToEndEffectorOffset(normalizedVector,dist)
+        #return self.arm.PlanToEndEffectorOffset(normalizedVector,dist)
 
 
+        return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
         
         
     def _MoveToCanvas(self):
-        return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,self.canvasOffset)
+        normalTf = numpy.eye(4)
+
+        normalTf[0][3] = self.normalVectorUnit[0]
+        normalTf[1][3] = self.normalVectorUnit[1]
+        normalTf[2][3] = self.normalVectorUnit[2]
+        print "VECTORS"
+        print "VECTORS"
+        print "VECTORS"
+        print "VECTORS"
+        print "VECTORS"
+        print  self.normalVectorUnit
+
+        rtf = self.robot.GetTransform()
+        rtf[0][3] = 0
+        rtf[1][3] = 0
+        rtf[2][3] = 0
+        tNorm = numpy.dot(rtf,normalTf)
+        newNormalVector = numpy.array([tNorm[0][3],tNorm[1][3],tNorm[2][3]])
+        print newNormalVector
+        return self.arm.PlanToEndEffectorOffset(newNormalVector,self.canvasOffset)
 
     def _MoveAwayFromCanvas(self):
         return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,self.canvasOffset)
@@ -314,15 +436,18 @@ if __name__ == "__main__":
     #robot_transform[0:3,3]= [1.95,0,1]
     body1.SetTransform(robot_transform)
 
-    import trajoptpy  
-    cc = trajoptpy.GetCollisionChecker(env)
-    cc.ExcludeCollisionPair(body1.GetLinks()[0],body2.GetLinks()[0])
+
+    rtf = robot.GetTransform()
+    rtf[0][3]=5
+    rtf[0][1]=4
+    robot.SetTransform(rtf)
 
 
 
     #Todo make center expressed in meters
-    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1,0,0]),numpy.array([0.6,0,1]),numpy.array([0.2,0.2]))
+    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
+    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,0,0]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
 
-    pathSquare  = [numpy.array([0.1001,0.1001]),numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
+    pathSquare  = [numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()
