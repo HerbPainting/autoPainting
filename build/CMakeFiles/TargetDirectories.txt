@@ -1,0 +1,7 @@
+/home/pratik/dev/catkin_ws/src/autoPainting/build/CMakeFiles/download_extra_data.dir
+/home/pratik/dev/catkin_ws/src/autoPainting/build/CMakeFiles/clean_test_results_autoPainting.dir
+/home/pratik/dev/catkin_ws/src/autoPainting/build/CMakeFiles/_catkin_empty_exported_target.dir
+/home/pratik/dev/catkin_ws/src/autoPainting/build/CMakeFiles/tests.dir
+/home/pratik/dev/catkin_ws/src/autoPainting/build/CMakeFiles/doxygen.dir
+/home/pratik/dev/catkin_ws/src/autoPainting/build/CMakeFiles/clean_test_results.dir
+/home/pratik/dev/catkin_ws/src/autoPainting/build/CMakeFiles/run_tests.dir

@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>autoPainting</name>
+  <version>0.0.1</version>
+  <description>
+    Python library for making HERB paint a picture. HERB is a
+    bimanual mobile manipulator developed by the Personal Robotics Lab at
+    Carnegie Mellon University.
+  </description>
+  <url type="website">https://github.com/HerbPainting/autoPainting</url>
+  <url type="repository">https://github.com/HerbPainting/autoPainting.git</url>
+  <url type="bugtracker">https://github.com/HerbPainting/autoPainting/issues</url>
+  <maintainer email="benballa@andrew.cmu.edu"></maintainer>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>python</depend>
+
+  <exec_depend>actionlib</exec_depend>
+  <exec_depend>actionlib_msgs</exec_depend>
+  <exec_depend>cbirrt2</exec_depend>
+  <exec_depend>or_trajopt</exec_depend>
+  <exec_depend>or_parabolicsmoother</exec_depend>
+  <exec_depend>herb_description</exec_depend>
+  <exec_depend>espeak</exec_depend>
+  <exec_depend>prpy</exec_depend>
+  <exec_depend>ipython</exec_depend>
+  <exec_depend>python-argparse</exec_depend>
+  <exec_depend>python-numpy</exec_depend>
+  <exec_depend>python-yaml</exec_depend>
+  <exec_depend>or_urdf</exec_depend>
+  <exec_depend>or_cdchomp</exec_depend>
+  <exec_depend>or_ompl</exec_depend>
+  <exec_depend>or_sbpl</exec_depend>
+  <exec_depend>openrave</exec_depend>
+  <exec_depend>python-yaml</exec_depend>
+
+  <test_depend>actionlib</test_depend>
+  <test_depend>actionlib_msgs</test_depend>
+  <test_depend>cbirrt2</test_depend>
+  <test_depend>or_trajopt</test_depend>
+  <test_depend>or_parabolicsmoother</test_depend>
+  <test_depend>herb_description</test_depend>
+  <test_depend>espeak</test_depend>
+  <test_depend>prpy</test_depend>
+  <test_depend>ipython</test_depend>
+  <test_depend>python-argparse</test_depend>
+  <test_depend>python-numpy</test_depend>
+  <test_depend>python-yaml</test_depend>
+  <test_depend>or_urdf</test_depend>
+  <test_depend>or_cdchomp</test_depend>
+  <test_depend>or_ompl</test_depend>
+  <test_depend>or_sbpl</test_depend>
+  <test_depend>openrave</test_depend>
+  <test_depend>python-yaml</test_depend>
+
+  <test_depend>python-nose</test_depend>
+  <test_depend>pr_ordata</test_depend>
+  <!--<test_depend>or_pushing</test_depend>--> <!-- in randomized_rearrangement_planning -->
+</package>

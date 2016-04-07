@@ -14,6 +14,8 @@ import math
 
 import prpy
 import prpy.util
+from RRTPlanner import RRTPlanner
+from PlanningEnv import PlanningEnv
 
 
 def ConvertPlanToTrajectory(self, plan):
@@ -442,12 +444,59 @@ if __name__ == "__main__":
     rtf[0][1]=4
     robot.SetTransform(rtf)
 
+# Add and place table
+    table = env.ReadKinBodyXMLFile('../data/objects/table.kinbody.xml')
+    env.Add(table)
 
+    table_pose = numpy.array([[ 0, 0, -1, 1.5], 
+                              [-1, 0,  0, 0], 
+                              [ 0, 1,  0, 0], 
+                              [ 0, 0,  0, 1]])
+    table.SetTransform(table_pose)
+    #Add in canvas cube
+    from openravepy import *
+    body = RaveCreateKinBody(env,'')
+    body.SetName('testbody')
+    body.InitFromBoxes(numpy.array([[0.6,0,1,0.01,0.2,0.3]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
+    env.AddKinBody(body)
+    #Add table
+    table = env.ReadKinBodyXMLFile('../data/objects/table.kinbody.xml')
+    env.Add(table)
 
-    #Todo make center expressed in meters
+    table_pose = numpy.array([[ 0, 0, -1, 1.5], 
+                              [-1, 0,  0, 0], 
+                              [ 0, 1,  0, 0], 
+                              [ 0, 0,  0, 1]])
+    table.SetTransform(table_pose)
+
     dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
     dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,0,0]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
+    
 
-    pathSquare  = [numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
+
+
+
+# RRT planner
+
+    planning_env = PlanningEnv()
+    planner = RRTPlanner(planning_env)
+ 
+
+    raw_input('Press any key to begin planning')
+    world_extents = planning_env.getBoundaryLimits()
+    start_config = [[0,0], [3.9,3.9], [3.9,0], [0,3.9]]
+    goal_config = [[3.9,3.9], [0,0], [0,3.9], [3.9,0]]
+    draw_plan = planner.Plan(start_config, goal_config)
+  
+    
+    for i in xrange(len(draw_plan)):
+    	arr1=numpy.asarray(draw_plan[i][0])
+    	arr2=numpy.asarray(draw_plan[i][1])
+	path_RRT= [arr1,arr2]
+	dm.Draw(path_RRT)
+    
+
+   
+    #pathSquare  = [numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()

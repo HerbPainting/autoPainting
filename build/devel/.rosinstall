@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/pratik/dev/catkin_ws/src/autoPainting/build/devel/setup.sh

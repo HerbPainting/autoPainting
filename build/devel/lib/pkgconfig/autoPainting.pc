@@ -1,0 +1,8 @@
+prefix=/home/pratik/dev/catkin_ws/src/autoPainting/build/devel
+
+Name: autoPainting
+Description: Description of autoPainting
+Version: 0.0.1
+Cflags: 
+Libs: -L/home/pratik/dev/catkin_ws/src/autoPainting/build/devel/lib 
+Requires: 

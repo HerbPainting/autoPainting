@@ -1,0 +1,7 @@
+set(_CATKIN_CURRENT_PACKAGE "autoPainting")
+set(autoPainting_MAINTAINER " <benballa@andrew.cmu.edu>")
+set(autoPainting_DEPRECATED "")
+set(autoPainting_VERSION "0.0.1")
+set(autoPainting_BUILD_DEPENDS "python")
+set(autoPainting_RUN_DEPENDS "actionlib" "actionlib_msgs" "cbirrt2" "or_trajopt" "or_parabolicsmoother" "herb_description" "espeak" "prpy" "ipython" "python-argparse" "python-numpy" "python-yaml" "or_urdf" "or_cdchomp" "or_ompl" "or_sbpl" "openrave" "python")
+set(autoPainting_BUILDTOOL_DEPENDS "catkin")
