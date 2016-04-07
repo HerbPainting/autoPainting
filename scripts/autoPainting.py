@@ -342,6 +342,9 @@ class DrawingManager(object):
 
 
         origLimits = self.arm.GetVelocityLimits()
+
+
+        #Set the speed limits,  this should be controled by the --sim argument
         limits = origLimits/2
         self.arm.SetVelocityLimits(limits,self.arm.GetIndices())
 
@@ -445,14 +448,14 @@ if __name__ == "__main__":
     robot.SetTransform(rtf)
 
 # Add and place table
-    table = env.ReadKinBodyXMLFile('../data/objects/table.kinbody.xml')
-    env.Add(table)
+    # table = env.ReadKinBodyXMLFile('../data/objects/table.kinbody.xml')
+    # env.Add(table)
 
-    table_pose = numpy.array([[ 0, 0, -1, 1.5], 
-                              [-1, 0,  0, 0], 
-                              [ 0, 1,  0, 0], 
-                              [ 0, 0,  0, 1]])
-    table.SetTransform(table_pose)
+    # table_pose = numpy.array([[ 0, 0, -1, 1.5], 
+    #                           [-1, 0,  0, 0], 
+    #                           [ 0, 1,  0, 0], 
+    #                           [ 0, 0,  0, 1]])
+    # table.SetTransform(table_pose)
     #Add in canvas cube
     from openravepy import *
     body = RaveCreateKinBody(env,'')
@@ -482,21 +485,30 @@ if __name__ == "__main__":
     planner = RRTPlanner(planning_env)
  
 
-    raw_input('Press any key to begin planning')
-    world_extents = planning_env.getBoundaryLimits()
-    start_config = [[0,0], [3.9,3.9], [3.9,0], [0,3.9]]
-    goal_config = [[3.9,3.9], [0,0], [0,3.9], [3.9,0]]
-    draw_plan = planner.Plan(start_config, goal_config)
-  
-    
-    for i in xrange(len(draw_plan)):
-    	arr1=numpy.asarray(draw_plan[i][0])
-    	arr2=numpy.asarray(draw_plan[i][1])
-	path_RRT= [arr1,arr2]
-	dm.Draw(path_RRT)
-    
 
-   
-    #pathSquare  = [numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
+    def DrawRRT():
+       raw_input('Press any key to begin planning')
+       world_extents = planning_env.getBoundaryLimits()
+       start_config = [[1,1], [3.9,3.9], [3.9,1], [1,3.9]]
+       goal_config = [[3.9,3.9], [1,1], [1,3.9], [3.9,1]]
+       draw_plan = planner.Plan(start_config, goal_config)
+  
+       
+       for i in xrange(len(draw_plan)):
+       	   arr1=numpy.asarray(draw_plan[i][0])
+       	   arr2=numpy.asarray(draw_plan[i][1])
+
+           print "STarting debug message"
+           print arr1
+           print arr2
+           
+           path_RRT= [arr1,arr2]
+           
+           print path_RRT
+           dm.Draw(path_RRT)
+       
+
+      
+    pathSquare  = [numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()

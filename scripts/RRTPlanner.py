@@ -1,6 +1,7 @@
 import numpy
 from RRTTree import RRTTree
 from random import random
+from random import seed
 
 class RRTPlanner(object):
 
@@ -8,6 +9,7 @@ class RRTPlanner(object):
         self.planning_env = planning_env
         self.scale = 5.0
         self.unit_change = 100.0
+        seed(0)
         
 
     def Plan(self, start_config_list, goal_config_list, epsilon = 0.001):
