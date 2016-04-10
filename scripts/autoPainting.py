@@ -96,8 +96,8 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
     else:
         tfRz = getZRotation(math.atan(z))
     #print math.atan(x)
-    print math.atan(y)
-    print math.atan(z)
+    #print math.atan(y)
+    #print math.atan(z)
     #tfRy = numpy.eye(4)
     tfRx = numpy.eye(4)
     #tfRz = numpy.eye(4)
@@ -112,12 +112,11 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
     
     #return getYRotation(0.1)
 
-    print tf
+    #print tf
     
     final = numpy.dot(tf,numpy.dot(numpy.dot(tfRy,tfRz),tfRx))
-    print final
+    #print final
     return final
-    
     
 
 class DrawingManager(object):
@@ -142,6 +141,9 @@ class DrawingManager(object):
 
         
         self.tf = getTransformFromPlane(self.normalVectorUnit,canvasCorner)
+
+
+        
 
     
     def _PlanToEndEffectorPose(self,tf):
@@ -172,16 +174,15 @@ class DrawingManager(object):
         tf[2][3] = armLocation[2]
         self.currentCanvasPose = numpy.array([0,0])
         tf = numpy.dot(tf,getYRotation(math.pi/2))
-        print tf
         return self._PlanToEndEffectorPose(tf)
         
 
     def _MoveAcrossCanvas(self,point):
         delta = self.currentCanvasPose - point
-        print "Delta a"
-        print delta
-        print self.currentCanvasPose
-        print point
+        #print "Delta a"
+        #print delta
+        #print self.currentCanvasPose
+        #print point
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
         rTf = self.robot.GetTransform()
 
@@ -199,10 +200,10 @@ class DrawingManager(object):
         realCurrentPoint = numpy.dot(numpy.dot(rTf,self.tf),currentPointTF)
         realNewPoint = numpy.dot(numpy.dot(rTf,self.tf),newPointTF)
 
-        print "RealCurrentPoint"
-        print realCurrentPoint
-        print "RealNewPoint"
-        print realNewPoint
+        #print "RealCurrentPoint"
+        #print realCurrentPoint
+        #print "RealNewPoint"
+        #print realNewPoint
 
 
         
@@ -211,13 +212,13 @@ class DrawingManager(object):
         currentVector = vectorizeTF(realCurrentPoint)
 
         delta = currentVector-newVector
-        print "DELTA"
-        print delta
+        #print "DELTA"
+        #print delta
         d = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2))
-        print d
+        #print d
         normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
 
-        print "Normal Delta"
+        #print "Normal Delta"
 
         self.currentCanvasPose = point
 
@@ -227,36 +228,36 @@ class DrawingManager(object):
        # newPt = self.canvasCenter * numpy.dot(self.tf,pt)
        # pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
        # oldPt = self.canvasCenter * numpy.dot(self.tf,pt)
-        Size3d = numpy.array([self.canvasSize[0],self.canvasSize[1],0])
-        canvasOrigin = numpy.array(self.canvasCenter - Size3d/2.0)
+       # Size3d = numpy.array([self.canvasSize[0],self.canvasSize[1],0])
+       # canvasOrigin = numpy.array(self.canvasCenter - Size3d/2.0)
        # pt = numpy.array([point[0],point[1],0])
        # newPt = self.canvasCenter +numpy.dot(self.tf,pt)
        # pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
        # oldPt = self.canvasCenter * numpy.dot(self.tf,pt)
 
-        realPose = numpy.array([0,self.currentCanvasPose[0],self.currentCanvasPose[1]])
-        realNew = numpy.array([0,point[0],point[1]])
-        oldPt = realPose + canvasOrigin
-        newPt = realNew + canvasOrigin
-        vector = oldPt - newPt
+       # realPose = numpy.array([0,self.currentCanvasPose[0],self.currentCanvasPose[1]])
+       # realNew = numpy.array([0,point[0],point[1]])
+       # oldPt = realPose + canvasOrigin
+       # newPt = realNew + canvasOrigin
+       # vector = oldPt - newPt
 
-        vector = numpy.array([vector[0],vector[1],vector[2]])
+       # vector = numpy.array([vector[0],vector[1],vector[2]])
         
-        self.currentCanvasPose = point
-        print vector
-        print dist
+       # self.currentCanvasPose = point
+       # print vector
+       # print dist
 
-        normalizedVector = vector / math.sqrt(math.pow(vector[0],2) + math.pow(vector[1],2) + math.pow(vector[2],2))
+       # normalizedVector = vector / math.sqrt(math.pow(vector[0],2) + math.pow(vector[1],2) + math.pow(vector[2],2))
 
-        print normalizedVector
-        print normalizedVector
-        print dist
+       # print normalizedVector
+       # print normalizedVector
+       # print dist
         #import IPython
         #IPython.embed()
         #return self.arm.PlanToEndEffectorOffset(normalizedVector,dist)
 
 
-        return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
+       # return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
         
         
     def _MoveToCanvas(self):
@@ -265,12 +266,6 @@ class DrawingManager(object):
         normalTf[0][3] = self.normalVectorUnit[0]
         normalTf[1][3] = self.normalVectorUnit[1]
         normalTf[2][3] = self.normalVectorUnit[2]
-        print "VECTORS"
-        print "VECTORS"
-        print "VECTORS"
-        print "VECTORS"
-        print "VECTORS"
-        print  self.normalVectorUnit
 
         rtf = self.robot.GetTransform()
         rtf[0][3] = 0
@@ -278,11 +273,22 @@ class DrawingManager(object):
         rtf[2][3] = 0
         tNorm = numpy.dot(rtf,normalTf)
         newNormalVector = numpy.array([tNorm[0][3],tNorm[1][3],tNorm[2][3]])
-        print newNormalVector
         return self.arm.PlanToEndEffectorOffset(newNormalVector,self.canvasOffset)
 
     def _MoveAwayFromCanvas(self):
-        return self.arm.PlanToEndEffectorOffset(self.normalVectorUnit,self.canvasOffset)
+        normalTf = numpy.eye(4)
+
+        normalTf[0][3] = self.normalVectorUnit[0]
+        normalTf[1][3] = self.normalVectorUnit[1]
+        normalTf[2][3] = self.normalVectorUnit[2]
+
+        rtf = self.robot.GetTransform()
+        rtf[0][3] = 0
+        rtf[1][3] = 0
+        rtf[2][3] = 0
+        tNorm = numpy.dot(rtf,normalTf)
+        newNormalVector = numpy.array([-1*tNorm[0][3],-1*tNorm[1][3],-1*tNorm[2][3]])
+        return self.arm.PlanToEndEffectorOffset(newNormalVector,self.canvasOffset)
 
     
     def Draw(self,points):
@@ -314,14 +320,11 @@ class DrawingManager(object):
             self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
             for x in xrange(len(points) -1):
                 index = x + 1
-                print points
-                print points[index]
-                print index
                 trajs.append(self._MoveAcrossCanvas(points[index]))
                 self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
 
 
-            #trajs.append(self._MoveAwayFromCanvas())
+            trajs.append(self._MoveAwayFromCanvas())
 
 
         totalTraj = trajs[0]
