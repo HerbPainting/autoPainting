@@ -75,8 +75,6 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
     b = normalUnitVector[1]
     c = normalUnitVector[2]
 
-
-
     y = ( -b*1-c*0 ) / a * -1
     z = ( -b*0-c*1 ) / a * -1
     #z = ( -a*1-b*0 ) / c
@@ -85,37 +83,19 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
         tfRy = numpy.eye(4)
     else:
         tfRy = getYRotation(math.atan(y))
-
-    #if math.isnan(x):
-    #    tfRx = numpy.eye(4)
-    #else:
-    #    tfRx = getXRotation(math.atan(x))
     
     if math.isnan(z):
         tfRz = numpy.eye(4)
     else:
         tfRz = getZRotation(math.atan(z))
-    #print math.atan(x)
-    #print math.atan(y)
-    #print math.atan(z)
-    #tfRy = numpy.eye(4)
     tfRx = numpy.eye(4)
-    #tfRz = numpy.eye(4)
-    #tfRx = getXRotation(0.8)
-    #tfRy = getYRotation(0.4)
-    #tfRz = getZRotation(0.4)
     tf = numpy.eye(4)
 
     tf[0][3] = canvasCorner[0]
     tf[1][3] = canvasCorner[1]
     tf[2][3] = canvasCorner[2]
     
-    #return getYRotation(0.1)
-
-    #print tf
-    
     final = numpy.dot(tf,numpy.dot(numpy.dot(tfRy,tfRz),tfRx))
-    #print final
     return final
     
 
@@ -141,10 +121,6 @@ class DrawingManager(object):
 
         
         self.tf = getTransformFromPlane(self.normalVectorUnit,canvasCorner)
-
-
-        
-
     
     def _PlanToEndEffectorPose(self,tf):
         realtf = numpy.dot(self.robot.GetTransform(),tf)
@@ -179,15 +155,10 @@ class DrawingManager(object):
 
     def _MoveAcrossCanvas(self,point):
         delta = self.currentCanvasPose - point
-        #print "Delta a"
-        #print delta
-        #print self.currentCanvasPose
-        #print point
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
         rTf = self.robot.GetTransform()
 
         currentPointTF=numpy.eye(4)
-
         currentPointTF[1][3] = self.currentCanvasPose[0]
         currentPointTF[2][3] = self.currentCanvasPose[1]
 
@@ -196,29 +167,16 @@ class DrawingManager(object):
         newPointTF[1][3] = point[0]
         newPointTF[2][3] = point[1]
 
-
         realCurrentPoint = numpy.dot(numpy.dot(rTf,self.tf),currentPointTF)
         realNewPoint = numpy.dot(numpy.dot(rTf,self.tf),newPointTF)
-
-        #print "RealCurrentPoint"
-        #print realCurrentPoint
-        #print "RealNewPoint"
-        #print realNewPoint
-
-
         
         vectorizeTF = lambda a: numpy.array( [ a[0][3],a[1][3],a[2][3] ] )
         newVector = vectorizeTF(realNewPoint)
         currentVector = vectorizeTF(realCurrentPoint)
 
         delta = currentVector-newVector
-        #print "DELTA"
-        #print delta
         d = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2))
-        #print d
         normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
-
-        #print "Normal Delta"
 
         self.currentCanvasPose = point
 
@@ -292,9 +250,6 @@ class DrawingManager(object):
 
     
     def Draw(self,points):
-     
-
-
         #Move to the offset center of the plane
         initalPreDrawPath = self._MoveToInitialPreDraw()        
         robot.ExecutePath(initalPreDrawPath)
@@ -326,7 +281,6 @@ class DrawingManager(object):
 
             trajs.append(self._MoveAwayFromCanvas())
 
-
         totalTraj = trajs[0]
 
         idx = totalTraj.GetNumWaypoints()
@@ -335,17 +289,13 @@ class DrawingManager(object):
             for ptIndex in xrange(trajs[index].GetNumWaypoints()):
                 totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
                 idx = idx + 1
-            
 
         #Reset
         self.robot = realRobot
         self.arm = realArm        
 
         performTraj = prpy.util.CopyTrajectory(totalTraj,env=robot.GetEnv())
-
-
         origLimits = self.arm.GetVelocityLimits()
-
 
         #Set the speed limits,  this should be controled by the --sim argument
         limits = origLimits/2
@@ -354,24 +304,6 @@ class DrawingManager(object):
         robot.ExecutePath(performTraj)
 	
         self.arm.SetVelocityLimits(origLimits,self.arm.GetIndices())
-
-        
-        #traj2a = prpy.util.CopyTrajectory(traj2,env=env)
-     
-#            rName = robot.GetName()
-#            with prpy.Clone(env) as cloned_env:
-#                r = prpy.Cloned(robot)
-#                traj1 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
-#                num = traj1.GetNumOfWaypoints()
-#                config = traj1.GetWaypoint(num-1)
-#                r.right_arm.SetDOFValues(config)
-#                traj2 = r.right_arm.PlanToEndEffectorOffset([0,1,0],.02)
-#
-
-
-        #trajs.append(self._MoveAwayFromCanvas())
-
-        #traj2a = prpy.util.CopyTrajectory(traj2,env=env)
 
 
 if __name__ == "__main__":
