@@ -97,7 +97,36 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
     
     final = numpy.dot(tf,numpy.dot(numpy.dot(tfRy,tfRz),tfRx))
     return final
-    
+
+
+class DMConfig(object):
+    poses = ["Red","Blue","Yellow","Clean","Canvas"]
+    def __init__(self,robot,arm):
+        self.poses = []
+        for color in DMConfig.poses:
+            self.poses[pose] = None
+        self.arm = arm
+
+        if robot.right_arm is arm:
+            self.armString = "Right"
+        else:
+            self.armString = "Left"
+        self.robot = robot
+
+    def config(self):
+        self.robot.SetStiffness(0)
+        for x in DMConfig.poses:
+            raw_input('Configure ' + x + ' pose')
+            self.poses[x] = self.arm.GetDOFValues()
+       
+    def save(self,name):
+        print "save"
+        import pickle
+        pickle.dump(self.poses,open(name,"wb"))
+    def load(self,name):
+        print "load"
+        import pickle
+        self.poses = pickle.load(open(name,"rb"))
 
 class DrawingManager(object):
     def __init__(self,env,robot,arm,plane,canvasCorner,canvasSize):
@@ -161,7 +190,7 @@ class DrawingManager(object):
         currentPointTF=numpy.eye(4)
         currentPointTF[1][3] = self.currentCanvasPose[0]
         currentPointTF[2][3] = self.currentCanvasPose[1]
-
+        
         newPointTF=numpy.eye(4)
 
         newPointTF[1][3] = point[0]
@@ -248,7 +277,14 @@ class DrawingManager(object):
         newNormalVector = numpy.array([-1*tNorm[0][3],-1*tNorm[1][3],-1*tNorm[2][3]])
         return self.arm.PlanToEndEffectorOffset(newNormalVector,self.canvasOffset)
 
-    
+
+    def GetColor(self,color):
+        pass
+        #self.arm.PlanToConfiguration
+    def CleanBrush(self):
+        pass
+        
+
     def Draw(self,points):
         #Move to the offset center of the plane
         initalPreDrawPath = self._MoveToInitialPreDraw()        
@@ -257,53 +293,54 @@ class DrawingManager(object):
         #Move to the initial point of the path
         initial = points[0]
         robot.ExecutePath(self._MoveAcrossCanvas(initial))
-    
-        #Save real arms
-        realRobot = self.robot
-        realArm = self.arm
+        
+        try:
+            #Save real arms
+            realRobot = self.robot
+            realArm = self.arm
 
-        trajs = []
-        with prpy.Clone(env) as cloned_env:
+            trajs = []
+            with prpy.Clone(env) as cloned_env:
             
-            self.robot = prpy.Cloned(robot)
-            if self.armString == "Right":
-                self.arm = self.robot.right_arm
-            else:
-                self.arm = self.robot.left_arm
+                self.robot = prpy.Cloned(robot)
+                if self.armString == "Right":
+                    self.arm = self.robot.right_arm
+                else:
+                    self.arm = self.robot.left_arm
 
-            trajs.append(self._MoveToCanvas())
-            self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
-            for x in xrange(len(points) -1):
-                index = x + 1
-                trajs.append(self._MoveAcrossCanvas(points[index]))
+                trajs.append(self._MoveToCanvas())
                 self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
+                for x in xrange(len(points) -1):
+                    index = x + 1
+                    trajs.append(self._MoveAcrossCanvas(points[index]))
+                    self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
 
 
-            trajs.append(self._MoveAwayFromCanvas())
+                trajs.append(self._MoveAwayFromCanvas())
 
-        totalTraj = trajs[0]
+            totalTraj = trajs[0]
 
-        idx = totalTraj.GetNumWaypoints()
-        for x in xrange(len(trajs)-1):
-            index = x + 1
-            for ptIndex in xrange(trajs[index].GetNumWaypoints()):
-                totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
-                idx = idx + 1
-
-        #Reset
-        self.robot = realRobot
-        self.arm = realArm        
+            idx = totalTraj.GetNumWaypoints()
+            for x in xrange(len(trajs)-1):
+                index = x + 1
+                for ptIndex in xrange(trajs[index].GetNumWaypoints()):
+                    totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
+                    idx = idx + 1
+        finally:
+            #Reset
+            self.robot = realRobot
+            self.arm = realArm        
 
         performTraj = prpy.util.CopyTrajectory(totalTraj,env=robot.GetEnv())
         origLimits = self.arm.GetVelocityLimits()
+        try:
+            #Set the speed limits,  this should be controled by the --sim argument
+            limits = origLimits/2
+            self.arm.SetVelocityLimits(limits,self.arm.GetIndices())
 
-        #Set the speed limits,  this should be controled by the --sim argument
-        limits = origLimits/2
-        self.arm.SetVelocityLimits(limits,self.arm.GetIndices())
-
-        robot.ExecutePath(performTraj)
-	
-        self.arm.SetVelocityLimits(origLimits,self.arm.GetIndices())
+            robot.ExecutePath(performTraj)
+        finally:
+            self.arm.SetVelocityLimits(origLimits,self.arm.GetIndices())
 
 
 if __name__ == "__main__":
