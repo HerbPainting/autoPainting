@@ -100,9 +100,9 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
 
 
 class DMConfig(object):
-    poses = ["Red","Blue","Yellow","Clean","Canvas"]
+    poses = ["Red","Blue","Yellow","Clean","Canvas","PreColor"]
     def __init__(self,robot,arm):
-        self.poses = []
+        self.poses = {}
         for color in DMConfig.poses:
             self.poses[pose] = None
         self.arm = arm
@@ -117,21 +117,21 @@ class DMConfig(object):
         self.robot.SetStiffness(0)
         for x in DMConfig.poses:
             raw_input('Configure ' + x + ' pose')
-            self.poses[x] = self.arm.GetDOFValues()
+            self.poses[x] = {}
+            self.poses[x]["DOF"] = self.arm.GetDOFValues()
+            self.poses[x]["TF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_arm.GetTransform())
        
     def save(self,name):
         print "save"
         import pickle
         pickle.dump(self.poses,open(name,"wb"))
-    def load(self,name):
-        print "load"
-        import pickle
-        self.poses = pickle.load(open(name,"rb"))
 
 class DrawingManager(object):
-    def __init__(self,env,robot,arm,plane,canvasCorner,canvasSize):
+    def __init__(self,env,robot,arm,plane,canvasCorner,canvasSize,configFileName):
         self.arm = arm
         self.env = env
+        
+        self.loadConfig(configFileName)
 
         if robot.right_arm is arm:
             self.armString = "Right"
@@ -150,6 +150,10 @@ class DrawingManager(object):
 
         
         self.tf = getTransformFromPlane(self.normalVectorUnit,canvasCorner)
+
+    def loadConfig(self,configFileName):
+        import pickle
+        #self.config = pickle.load(open(configFileName,"rb")) 
     
     def _PlanToEndEffectorPose(self,tf):
         realtf = numpy.dot(self.robot.GetTransform(),tf)
@@ -180,7 +184,18 @@ class DrawingManager(object):
         self.currentCanvasPose = numpy.array([0,0])
         tf = numpy.dot(tf,getYRotation(math.pi/2))
         return self._PlanToEndEffectorPose(tf)
-        
+    
+    def _MoveAlongLine(self,point):
+        currentPoint = self.arm.GetTransform()
+        newPoint = numpy.dot(self.robot.GetTransform(), point)
+
+        vectorizeTF = lambda a: numpy.array( [ a[0][3],a[1][3],a[2][3] ] )
+        newVector = vectorizeTF(newPoint)
+        currentVector = vectorizeTF(currentPoint)
+        delta = currentVector-newVector
+        normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
+        return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
+                  
 
     def _MoveAcrossCanvas(self,point):
         delta = self.currentCanvasPose - point
@@ -279,6 +294,24 @@ class DrawingManager(object):
 
 
     def GetColor(self,color):
+
+        #MoveToPreColor
+        self.arm.PlanToConfiguration(self.config["PreColor"]["DOF"],execute=True)
+        #ParrellelMove
+        
+        self._MoveAlongLine(self.config[color]["TF"])
+                
+        #Table cost?
+
+        #Dip 
+
+        #UnDip
+
+        #UndoPremove
+
+        #Move To Plane
+
+        #This could be cached
         pass
         #self.arm.PlanToConfiguration
     def CleanBrush(self):
@@ -444,8 +477,8 @@ if __name__ == "__main__":
                               [ 0, 0,  0, 1]])
     table.SetTransform(table_pose)
 
-    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,0,0]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
+    #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
+    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,0,0]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]),"default.cfg")
     
 
 
