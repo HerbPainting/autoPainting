@@ -293,26 +293,35 @@ class DrawingManager(object):
         return self.arm.PlanToEndEffectorOffset(newNormalVector,self.canvasOffset)
 
 
+
+    def Dip(self):
+        traj = self.arm.PlanToEndEffectorOffset([0,0,-1],0.01)
+        self.robot.ExecutePath(traj)
+
+    def UnDip(self):
+        traj = self.arm.PlanToEndEffectorOffset([0,0,1],0.01)
+        self.robot.ExecutePath(traj)
+
     def GetColor(self,color):
 
         #MoveToPreColor
         self.arm.PlanToConfiguration(self.config["PreColor"]["DOF"],execute=True)
         #ParrellelMove
         
-        self._MoveAlongLine(self.config[color]["TF"])
-                
+        performTraj = self._MoveAlongLine(self.config[color]["TF"])
+         
+
+
+        self.robot.ExecutePath(performTraj)
+       
         #Table cost?
 
-        #Dip 
+        self.Dip()
+        self.UnDip()
 
-        #UnDip
 
+        performTraj = self._MoveAlongLine(self.config["PreColor"]["TF"],execute=True)
         #UndoPremove
-
-        #Move To Plane
-
-        #This could be cached
-        pass
         #self.arm.PlanToConfiguration
     def CleanBrush(self):
         pass
