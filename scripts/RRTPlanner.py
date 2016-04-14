@@ -36,19 +36,21 @@ class RRTPlanner(object):
             start_config = start_config_list[i]
             goal_config = goal_config_list[i]
             tree = RRTTree(self.planning_env, start_config)
-            while distance > epsilon and len(tree.vertices) < 18:
+            while distance > epsilon and len(tree.vertices) < 20:
                 
-                
-                r = random()
-                if r > self.planning_env.p:
-                    target_config = self.planning_env.GenerateRandomConfiguration()
-                else:
-                    target_config = goal_config
+                # r = random()
+                # if r > self.planning_env.p:
+                target_config = self.planning_env.GenerateRandomConfiguration()
+                # else:
+                    # target_config = goal_config
                 current_id, current_config = tree.GetNearestVertex(target_config)
                 new_config = self.planning_env.Extend(current_config, target_config)
                 if new_config == None:
                     continue
                 else:
+                                        
+                    if new_config[0] < 0.1 or new_config[0] >= (self.planning_env.boundary_limits[1][0] - 0.1) or new_config[1] < 0.1 or new_config[1] >= (self.planning_env.boundary_limits[1][1] - 0.1):
+                    	continue
                     new_id = tree.AddVertex(new_config)
                     pt1 = [x*self.scale/self.unit_change for x in tree.vertices[current_id]]
                     pt2 = [x*self.scale/self.unit_change for x in tree.vertices[new_id]]
@@ -65,5 +67,6 @@ class RRTPlanner(object):
         #     plan.insert(0,prev_node)
         
         # plan.append(goal_config)
-        print len(draw_plan)
+        # Filter draw plan to remove points too near to the edge of the canvas
+
         return draw_plan

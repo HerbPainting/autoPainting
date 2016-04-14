@@ -88,7 +88,7 @@ class PlanningEnv(object):
     	# 		config_to_return = temp_config
     	# return config_to_return
         m = math.atan2(end_config[1] - start_config[1],end_config[0] - start_config[0])
-        d = 1
+        d = 0.5
         x2 = start_config[0] + d*math.cos(m)
         y2 = start_config[1] + d*math.sin(m)
         temp_config = numpy.array([x2,y2])
