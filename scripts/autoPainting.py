@@ -101,11 +101,12 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
 
 class DMConfig(object):
     poses = ["Red","Blue","Yellow","Clean","Canvas","PreColor"]
-    def __init__(self,robot,arm):
+    def __init__(self,robot,arm,hand):
         self.poses = {}
         for color in DMConfig.poses:
-            self.poses[pose] = None
+            self.poses[color] = None
         self.arm = arm
+        self.hand = hand
 
         if robot.right_arm is arm:
             self.armString = "Right"
@@ -120,6 +121,8 @@ class DMConfig(object):
             self.poses[x] = {}
             self.poses[x]["DOF"] = self.arm.GetDOFValues()
             self.poses[x]["TF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_arm.GetTransform())
+            self.poses[x]["HandDOF"] = self.hand.GetDOFValues()
+            self.poses[x]["HandTF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_hand.GetTransform())
        
     def save(self,name):
         print "save"
@@ -153,7 +156,7 @@ class DrawingManager(object):
 
     def loadConfig(self,configFileName):
         import pickle
-        #self.config = pickle.load(open(configFileName,"rb")) 
+        self.config = pickle.load(open(configFileName,"rb")) 
     
     def _PlanToEndEffectorPose(self,tf):
         realtf = numpy.dot(self.robot.GetTransform(),tf)
@@ -192,8 +195,9 @@ class DrawingManager(object):
         vectorizeTF = lambda a: numpy.array( [ a[0][3],a[1][3],a[2][3] ] )
         newVector = vectorizeTF(newPoint)
         currentVector = vectorizeTF(currentPoint)
-        delta = currentVector-newVector
+        delta = newVector - currentVector
         normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
+        dist = (math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
         return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
                   
 
@@ -419,13 +423,8 @@ if __name__ == "__main__":
         herbpy_args['segway_sim'] = args.sim
     
     env, robot = herbpy.initialize(**herbpy_args)
-
-    #Add in canvas cube
     from openravepy import *
-    body1 = RaveCreateKinBody(env,'')
-    body1.SetName('canvas')
-    body1.InitFromBoxes(numpy.array([[0,0,0,0.01,0.2,0.3]]),True) # [x,y,z,size_x,size_y,size_z]  canvas
-    env.AddKinBody(body1)
+    #Add in canvas cube
     body2 = RaveCreateKinBody(env,'')
     body2.SetName('Brush')
     body2.InitFromBoxes(numpy.array([[0,0,0,0.01,0.01,0.1]]),True) #[xb,y,z,size_x,size_y,size_z]   brush
@@ -440,9 +439,9 @@ if __name__ == "__main__":
     robot.right_arm.SetActive()
     robot.Grab(body2)
 
-    for igeom,geom in enumerate(body1.GetLinks()[0].GetGeometries()):
-        color = numpy.array([1,0.,0])
-        geom.SetDiffuseColor(color)
+    #for igeom,geom in enumerate(body1.GetLinks()[0].GetGeometries()):
+    #    color = numpy.array([1,0.,0])
+    #    geom.SetDiffuseColor(color)
 
     for igeom,geom in enumerate(body2.GetLinks()[0].GetGeometries()):
         color = numpy.array([0,0.,1])
@@ -450,16 +449,16 @@ if __name__ == "__main__":
 
 # place canvas
 
-    robot_transform=robot.GetTransform()
-    robot_transform[0:3,3]= [0.90,0,1]
+    #robot_transform=robot.GetTransform()
+    #robot_transform[0:3,3]= [0.90,0,1]
     #robot_transform[0:3,3]= [1.95,0,1]
-    body1.SetTransform(robot_transform)
+    #body1.SetTransform(robot_transform)
 
 
-    rtf = robot.GetTransform()
-    rtf[0][3]=5
-    rtf[0][1]=4
-    robot.SetTransform(rtf)
+    #rtf = robot.GetTransform()
+    #rtf[0][3]=5
+    #rtf[0][1]=4
+    #robot.SetTransform(rtf)
 
 # Add and place table
     # table = env.ReadKinBodyXMLFile('../data/objects/table.kinbody.xml')
@@ -474,20 +473,20 @@ if __name__ == "__main__":
     from openravepy import *
     body = RaveCreateKinBody(env,'')
     body.SetName('testbody')
-    body.InitFromBoxes(numpy.array([[0.6,0,1,0.01,0.2,0.3]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
+    body.InitFromBoxes(numpy.array([[1.9,0,1,0.01,0.2,0.3]]),True) # set geometry as one box of extents 0.1, 0.2, 0.3
     env.AddKinBody(body)
     #Add table
     table = env.ReadKinBodyXMLFile('../data/objects/table.kinbody.xml')
     env.Add(table)
 
-    table_pose = numpy.array([[ 0, 0, -1, 1.5], 
+    table_pose = numpy.array([[ 0, 0, -1, 3.5], 
                               [-1, 0,  0, 0], 
                               [ 0, 1,  0, 0], 
                               [ 0, 0,  0, 1]])
     table.SetTransform(table_pose)
 
     #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,0,0]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]),"default.cfg")
+    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,0,0]),numpy.array([0.7,0.0,1.2]),numpy.array([0.2,0.2]),"default")
     
 
 
@@ -522,7 +521,10 @@ if __name__ == "__main__":
            dm.Draw(path_RRT)
        
 
-      
+    def HandPre():
+        robot.right_hand.MoveHand(f1=1.75,f2=1.75,f3=1.40,spread=3.14/2) 
+    def HandClosed():
+        robot.right_hand.MoveHand(f1=1.8,f2=1.8,f3=1.45,spread=3.14/2)
     pathSquare  = [numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()
