@@ -15,8 +15,8 @@ def main(planning_env, planner):
 
 	raw_input('Press any key to begin planning')
 	world_extents = planning_env.getBoundaryLimits()
-	start_config = [[0,0], [3.9,3.9], [3.9,0], [0,3.9]]
-	goal_config = [[3.9,3.9], [0,0], [0,3.9], [3.9,0]]
+	start_config = [[1,1], [3.9,3.9], [3.9,1], [1,3.9]]
+	goal_config = [[3.9,3.9], [1,1], [1,3.9], [3.9,1]]
 	tree = planner.Plan(start_config, goal_config)
     #TreeViz.visualize(tree)
     
