@@ -162,9 +162,10 @@ class DrawingManager(object):
         realtf = numpy.dot(self.robot.GetTransform(),tf)
         return self.arm.PlanToEndEffectorPose(realtf)
             
-    def _MoveToInitialPreDraw(self):
-        size = numpy.array([self.canvasSize[0],self.canvasSize[1],0])
-        center = self.canvasCorner + size/2.0
+    def _MoveToInitialPreDraw(self,point):
+        size = numpy.array([point[0],point[1],0])
+        print size
+        center = self.canvasCorner + size
         
         normalTf = numpy.eye(4)
 
@@ -184,9 +185,15 @@ class DrawingManager(object):
         tf[0][3] = armLocation[0]
         tf[1][3] = armLocation[1]
         tf[2][3] = armLocation[2]
-        self.currentCanvasPose = numpy.array([0,0])
+        #self.currentCanvasPose = numpy.array([0,0])
         tf = numpy.dot(tf,getYRotation(math.pi/2))
-        return self._PlanToEndEffectorPose(tf)
+        traj = self._MoveAlongLine(tf)
+        self.robot.ExecutePath(traj)
+
+        traj = self._PlanToEndEffectorPose(tf)
+        #traj = self.arm.PlanToEndEffectorOffset([0,0,1],0.01)
+        self.robot.ExecutePath(traj)
+        #return self._PlanToEndEffectorPose(tf)
     
     def _MoveAlongLine(self,point):
         currentPoint = self.arm.GetTransform()
@@ -302,6 +309,18 @@ class DrawingManager(object):
         traj = self.arm.PlanToEndEffectorOffset([0,0,-1],0.01)
         self.robot.ExecutePath(traj)
 
+    def Spin(self):
+        a = self.arm.GetDOFValues()
+        b = self.arm.GetDOFValues()
+
+        a[-1] = -2.8
+        self.arm.PlanToConfiguration(a,execute=True)
+
+        a[-1] = 2.8
+        self.arm.PlanToConfiguration(a,execute=True)
+
+        self.arm.PlanToConfiguration(b,execute=True)
+
     def UnDip(self):
         traj = self.arm.PlanToEndEffectorOffset([0,0,1],0.01)
         self.robot.ExecutePath(traj)
@@ -310,6 +329,7 @@ class DrawingManager(object):
 
         #MoveToPreColor
         self.arm.PlanToConfiguration(self.config["PreColor"]["DOF"],execute=True)
+        #self.arm.hand.PlanToConfiguration(self.config["PreColor"]["HandDOF"],execute=True)
         #ParrellelMove
         
         performTraj = self._MoveAlongLine(self.config[color]["TF"])
@@ -321,24 +341,36 @@ class DrawingManager(object):
         #Table cost?
 
         self.Dip()
+        self.Spin()
         self.UnDip()
 
 
-        performTraj = self._MoveAlongLine(self.config["PreColor"]["TF"],execute=True)
+        performTraj = self._MoveAlongLine(self.config["PreColor"]["TF"])
+        self.robot.ExecutePath(performTraj)
         #UndoPremove
         #self.arm.PlanToConfiguration
     def CleanBrush(self):
-        pass
+        self.GetColor("Clean")
         
 
     def Draw(self,points):
         #Move to the offset center of the plane
-        initalPreDrawPath = self._MoveToInitialPreDraw()        
-        robot.ExecutePath(initalPreDrawPath)
+        try:
+            self.arm.PlanToConfiguration(self.config["Canvas"]["DOF"],execute=True)
+            #self.arm.hand.PlanToConfiguration(self.config["Canvas"]["HandDOF"],execute=True)
+            initial = points[0]
+            self._MoveToInitialPreDraw(initial)
+            self.currentCanvasPose = initial
+            #initalPreDrawPath = self._MoveToInitialPreDraw()        
+            #robot.ExecutePath(initalPreDrawPath)
 
-        #Move to the initial point of the path
-        initial = points[0]
-        robot.ExecutePath(self._MoveAcrossCanvas(initial))
+            #Move to the initial point of the path
+            #initial = points[0]
+            #robot.ExecutePath(self._MoveAcrossCanvas(initial))
+        except:
+            print "Hello"
+            return
+        
         
         try:
             #Save real arms
@@ -372,10 +404,15 @@ class DrawingManager(object):
                 for ptIndex in xrange(trajs[index].GetNumWaypoints()):
                     totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
                     idx = idx + 1
+        except:
+            print "Planning Draw Path Failed"
+            self.robot = realRobot
+            self.arm = realArm
+            return
         finally:
             #Reset
             self.robot = realRobot
-            self.arm = realArm        
+            self.arm = realArm
 
         performTraj = prpy.util.CopyTrajectory(totalTraj,env=robot.GetEnv())
         origLimits = self.arm.GetVelocityLimits()
@@ -385,6 +422,8 @@ class DrawingManager(object):
             self.arm.SetVelocityLimits(limits,self.arm.GetIndices())
 
             robot.ExecutePath(performTraj)
+        except:
+            print "Actual Draw Had Issue"
         finally:
             self.arm.SetVelocityLimits(origLimits,self.arm.GetIndices())
 
