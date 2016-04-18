@@ -199,8 +199,10 @@ class DMConfig(object):
         self.robot.SetStiffness(0)
         raw_input('Move to bottom left corner (On click the arm will rotate square)')
         blPtTf = self._adjustAndGetPoint()
+        self.robot.SetStiffness(0)
         raw_input('Move to top left corner (On click the arm will rotate square)')
         tlPtTf = self._adjustAndGetPoint()
+        self.robot.SetStiffness(0)
         raw_input('Move to bottm right corner (On click the arm will rotate square)')
         brPtTf = self._adjustAndGetPoint()
 
@@ -215,6 +217,11 @@ class DMConfig(object):
         width = math.sqrt(math.pow(vB[0],2) + math.pow(vB[1],2) + math.pow(vB[2],2))
         plane = numpy.cross(vA,vB)
         
+
+	
+        dist = math.sqrt(math.pow(plane[0],2) + math.pow(plane[1],2) + math.pow(plane[2],2))
+
+	plane = plane / dist
         
         self.poses["size"]   = numpy.array([width,height])      
         self.poses["plane"]  = plane
@@ -240,12 +247,9 @@ class DrawingManager(object):
             self.armString = "Left"
         self.robot = robot
         
-        if "plane" not in self.config:
-            self.config["plane"] = numpy.array([1,0,0])
-        if "corner" not in self.config:
-            self.config["corner"] = numpy.array([0.7,0,1.2])
-        if "size" not in self.config:
-            self.config["size"] = numpy.array([0.2,0.2])
+        #self.config["plane"] = numpy.array([1,0,0])
+        #self.config["corner"] = numpy.array([0.65,0,1.2])
+        #self.config["size"] = numpy.array([0.2,0.2])
 
         self.plane = self.config["plane"]
         
@@ -270,8 +274,7 @@ class DrawingManager(object):
         return self.arm.PlanToEndEffectorPose(realtf)
             
     def _MoveToInitialPreDraw(self,point):
-        size = numpy.array([point[0],point[1],0])
-        print size
+        size = numpy.array([0,point[0],point[1]])
         center = self.canvasCorner + size
         
         normalTf = numpy.eye(4)
@@ -403,11 +406,12 @@ class DrawingManager(object):
         #self.arm.hand.PlanToConfiguration(self.config["PreColor"]["HandDOF"],execute=True)
         #ParrellelMove
         
-        performTraj = self._MoveAlongLine(self.config[color]["TF"])
+        self.arm.PlanToConfiguration(self.config[color]["DOF"],execute=True)
+        #performTraj = self._MoveAlongLine(self.config[color]["TF"])
          
 
 
-        self.robot.ExecutePath(performTraj)
+        #self.robot.ExecutePath(performTraj)
        
         #Table cost?
 
@@ -416,8 +420,9 @@ class DrawingManager(object):
         self.UnDip()
 
 
-        performTraj = self._MoveAlongLine(self.config["PreColor"]["TF"])
-        self.robot.ExecutePath(performTraj)
+        self.arm.PlanToConfiguration(self.config["PreColor"]["DOF"],execute=True)
+        #performTraj = self._MoveAlongLine(self.config["PreColor"]["TF"])
+        #self.robot.ExecutePath(performTraj)
         #UndoPremove
         #self.arm.PlanToConfiguration
     def CleanBrush(self):
@@ -490,13 +495,13 @@ class DrawingManager(object):
         try:
             #Set the speed limits,  this should be controled by the --sim argument
             limits = origLimits/2
-            self.arm.SetVelocityLimits(limits,self.arm.GetIndices())
+            self.arm.SetVelocityLimits(limits,5)
 
             robot.ExecutePath(performTraj)
         except:
             print "Actual Draw Had Issue"
         finally:
-            self.arm.SetVelocityLimits(origLimits,self.arm.GetIndices())
+            self.arm.SetVelocityLimits(origLimits,2)
 
 
 if __name__ == "__main__":
@@ -596,7 +601,7 @@ if __name__ == "__main__":
     table.SetTransform(table_pose)
 
     #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,"default")
+    dm = DrawingManager(env,robot,robot.right_arm,"defaultLatest")
     
 
 
