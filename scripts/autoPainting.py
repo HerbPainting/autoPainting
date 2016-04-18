@@ -99,6 +99,12 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
     return final
 
 
+def planeFromPoint(a,b,c):
+    l1 = a - b
+    l2 = a - c
+
+    normal = numpy.cross(l1,l2)
+
 class DMConfig(object):
     poses = ["Red","Blue","Yellow","Clean","Canvas","PreColor"]
     def __init__(self,robot,arm,hand):
@@ -123,16 +129,108 @@ class DMConfig(object):
             self.poses[x]["TF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_arm.GetTransform())
             self.poses[x]["HandDOF"] = self.hand.GetDOFValues()
             self.poses[x]["HandTF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_hand.GetTransform())
-       
+        self._configurePlane()       
+
+    def _adjustAndGetPoint(self):
+        tf = self.arm.GetTransform()
+
+        tf = numpy.dot(numpy.linalg.inv(self.robot.GetTransform()),tf)
+        newtf = numpy.eye(4)
+        newtf[0][3] = tf[0][3]
+        newtf[1][3] = tf[1][3]
+        newtf[2][3] = tf[2][3]
+
+        newtf = numpy.dot(newtf,getYRotation(math.pi/2))
+
+        self.robot.SetStiffness(1)
+        
+        realtf = numpy.dot(self.robot.GetTransform(),newtf)
+        self.arm.PlanToEndEffectorPose(realtf,execute=True)
+        
+        inputValue = "A"
+        while(inputValue not in "rR"):
+            print "R or r to exit"
+            inputValue = raw_input("A = left, D = right, S = down, W = up, Z = in, X = out")
+            vector = numpy.array([0,0,0])
+            if inputValue in "Aa":
+                vector[1] = 1
+            elif inputValue in "Dd":
+                vector[1] = -1
+            elif inputValue in "Ss":
+                vector[2] = -1
+            elif inputValue in "Ww":
+                vector[2] = 1
+            elif inputValue in "Zz":
+                vector[0] = -1
+            elif inputValue in "Xx":
+                vector[0] = 1
+            elif inputValue in "Rr":
+                break
+            else:
+                inputValue = "Z"
+                continue
+            vector = vector 
+
+            tf = self.arm.GetTransform()
+
+            tf = numpy.dot(numpy.linalg.inv(self.robot.GetTransform()),tf)
+            tf[0][3] += vector[0]
+            tf[1][3] += vector[1]
+            tf[2][3] += vector[2]
+
+            realtf = numpy.dot(self.robot.GetTransform(),tf)
+
+
+            tf = self.arm.GetTransform()
+            vectorizeTF = lambda a: numpy.array( [ a[0][3],a[1][3],a[2][3] ] )
+
+            cpt = vectorizeTF(tf)
+            realpt = vectorizeTF(realtf)
+
+            delta = realpt - cpt
+            normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
+            self.arm.PlanToEndEffectorOffset(normalDelta,0.005,execute=True)
+        tf = self.arm.GetTransform()
+
+        tf = numpy.dot(numpy.linalg.inv(self.robot.GetTransform()),tf)
+        return tf          
+
+    def _configurePlane(self):
+        self.robot.SetStiffness(0)
+        raw_input('Move to bottom left corner (On click the arm will rotate square)')
+        blPtTf = self._adjustAndGetPoint()
+        raw_input('Move to top left corner (On click the arm will rotate square)')
+        tlPtTf = self._adjustAndGetPoint()
+        raw_input('Move to bottm right corner (On click the arm will rotate square)')
+        brPtTf = self._adjustAndGetPoint()
+
+        blPt = numpy.array([blPtTf[0][3],blPtTf[1][3],blPtTf[2][3]])
+        tlPt = numpy.array([tlPtTf[0][3],tlPtTf[1][3],tlPtTf[2][3]])
+        brPt = numpy.array([brPtTf[0][3],brPtTf[1][3],brPtTf[2][3]])
+        
+        vA = blPt - tlPt
+        vB = blPt - brPt
+        
+        height = math.sqrt(math.pow(vA[0],2) + math.pow(vA[1],2) + math.pow(vA[2],2))
+        width = math.sqrt(math.pow(vB[0],2) + math.pow(vB[1],2) + math.pow(vB[2],2))
+        plane = numpy.cross(vA,vB)
+        
+        
+        self.poses["size"]   = numpy.array([width,height])      
+        self.poses["plane"]  = plane
+        self.poses["corner"] = blPt 
+  
+           
     def save(self,name):
         print "save"
         import pickle
         pickle.dump(self.poses,open(name,"wb"))
 
 class DrawingManager(object):
-    def __init__(self,env,robot,arm,plane,canvasCorner,canvasSize,configFileName):
+    def __init__(self,env,robot,arm,configFileName):
         self.arm = arm
         self.env = env
+
         
         self.loadConfig(configFileName)
 
@@ -141,18 +239,27 @@ class DrawingManager(object):
         else:
             self.armString = "Left"
         self.robot = robot
-        self.plane = plane
+        
+        if "plane" not in self.config:
+            self.config["plane"] = numpy.array([1,0,0])
+        if "corner" not in self.config:
+            self.config["corner"] = numpy.array([0.7,0,1.2])
+        if "size" not in self.config:
+            self.config["size"] = numpy.array([0.2,0.2])
+
+        self.plane = self.config["plane"]
+        
         self.Realrobot = robot
-        self.Realplane = plane
-        self.canvasCorner = canvasCorner
-        self.canvasSize = canvasSize
-        dist = math.sqrt(math.pow(plane[0],2) + math.pow(plane[1],2) + math.pow(plane[2],2))
-        self.normalVectorUnit = plane/dist
+        self.Realplane = self.config["plane"]
+        self.canvasCorner = self.config["corner"]
+        self.canvasSize = self.config["size"]
+        dist = math.sqrt(math.pow(self.plane[0],2) + math.pow(self.plane[1],2) + math.pow(self.plane[2],2))
+        self.normalVectorUnit = self.plane/dist
         self.canvasOffset = 0.05
         self.currentCanvasPose = None
 
         
-        self.tf = getTransformFromPlane(self.normalVectorUnit,canvasCorner)
+        self.tf = getTransformFromPlane(self.normalVectorUnit,self.canvasCorner)
 
     def loadConfig(self,configFileName):
         import pickle
@@ -236,42 +343,6 @@ class DrawingManager(object):
         self.currentCanvasPose = point
 
         return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
-        
-       # pt = numpy.array([point[0],point[1],0])
-       # newPt = self.canvasCenter * numpy.dot(self.tf,pt)
-       # pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
-       # oldPt = self.canvasCenter * numpy.dot(self.tf,pt)
-       # Size3d = numpy.array([self.canvasSize[0],self.canvasSize[1],0])
-       # canvasOrigin = numpy.array(self.canvasCenter - Size3d/2.0)
-       # pt = numpy.array([point[0],point[1],0])
-       # newPt = self.canvasCenter +numpy.dot(self.tf,pt)
-       # pt = numpy.array([self.currentCanvasPose[0],self.currentCanvasPose[1],0,1])
-       # oldPt = self.canvasCenter * numpy.dot(self.tf,pt)
-
-       # realPose = numpy.array([0,self.currentCanvasPose[0],self.currentCanvasPose[1]])
-       # realNew = numpy.array([0,point[0],point[1]])
-       # oldPt = realPose + canvasOrigin
-       # newPt = realNew + canvasOrigin
-       # vector = oldPt - newPt
-
-       # vector = numpy.array([vector[0],vector[1],vector[2]])
-        
-       # self.currentCanvasPose = point
-       # print vector
-       # print dist
-
-       # normalizedVector = vector / math.sqrt(math.pow(vector[0],2) + math.pow(vector[1],2) + math.pow(vector[2],2))
-
-       # print normalizedVector
-       # print normalizedVector
-       # print dist
-        #import IPython
-        #IPython.embed()
-        #return self.arm.PlanToEndEffectorOffset(normalizedVector,dist)
-
-
-       # return self.arm.PlanToEndEffectorOffset(normalDelta,dist)
-        
         
     def _MoveToCanvas(self):
         normalTf = numpy.eye(4)
@@ -518,14 +589,14 @@ if __name__ == "__main__":
     table = env.ReadKinBodyXMLFile('../data/objects/table.kinbody.xml')
     env.Add(table)
 
-    table_pose = numpy.array([[ 0, 0, -1, 3.5], 
-                              [-1, 0,  0, 0], 
-                              [ 0, 1,  0, 0], 
-                              [ 0, 0,  0, 1]])
+    table_pose = numpy.eye(4)
+
+    table_pose = numpy.dot(getXRotation(3.14/2.0),table_pose)
+    table_pose[1][3] = -1.0
     table.SetTransform(table_pose)
 
     #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,0,0]),numpy.array([0.7,0.0,1.2]),numpy.array([0.2,0.2]),"default")
+    dm = DrawingManager(env,robot,robot.right_arm,"default")
     
 
 
@@ -559,7 +630,7 @@ if __name__ == "__main__":
            print path_RRT
            dm.Draw(path_RRT)
        
-
+    dmConfig = DMConfig(robot,robot.right_arm,robot.right_hand)
     def HandPre():
         robot.right_hand.MoveHand(f1=1.75,f2=1.75,f3=1.40,spread=3.14/2) 
     def HandClosed():
