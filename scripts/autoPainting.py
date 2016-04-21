@@ -640,6 +640,221 @@ if __name__ == "__main__":
         robot.right_hand.MoveHand(f1=1.75,f2=1.75,f3=1.40,spread=3.14/2) 
     def HandClosed():
         robot.right_hand.MoveHand(f1=1.8,f2=1.8,f3=1.45,spread=3.14/2)
+
+
+
+
+
+
+
+    def rect(bx,by,tx,ty):
+        return [(bx,by),
+                (bx,ty),
+                (tx,ty),
+                (tx,by),
+                (bx,by)]
+
+    def line(bx,by,tx,ty):
+        return [(bx,by),
+                (tx,ty)]
+
+
+    def circle(x,y,radius):
+        import math
+        points = []
+        for i in xrange(21):
+            rad = i * 3.14/40
+            xp = math.sin(rad) * radius
+            yp = math.cos(rad) * radius
+            points.append((xp,yp))
+
+        finalPoints = []
+        points.reverse()
+        for point in points:
+            finalPoints.append((x+point[0],y+point[1]))
+        points.reverse()
+        for point in points:
+            finalPoints.append((x-point[0],y+point[1]))
+        points.reverse()
+        for point in points:
+            finalPoints.append((x-point[0],y-point[1]))
+        points.reverse()
+        for point in points:
+            finalPoints.append((x+point[0],y-point[1]))
+        finalPoints.append(finalPoints[0])
+        return finalPoints
+
+
+    body = rect(0.1,0.1,0.2,0.3)
+    tire1 = rect(0.08,0.08,0.1,0.18)
+    tire2 = rect(0.22,0.08,0.20,0.18)
+
+    head = rect(0.13,0.36,0.17,0.39)
+    neck = rect(0.15,0.3,0.15,0.36)
+
+    arm1a = line(0.1,0.25,0.04,0.3)
+    arm1b = line(0.2,0.25,0.26,0.3)
+
+    arm2a = line(0.04,0.3,0.04,0.23)
+    arm2b = line(0.26,0.3,0.26,0.23)
+
+
+    finger1a = line(0.04,0.23,0.03,0.2)
+    finger1b = line(0.04,0.23,0.04,0.2)
+    finger1c = line(0.04,0.23,0.05,0.2)
+
+
+    finger2a = line(0.26,0.23,0.25,0.2)
+    finger2b = line(0.26,0.23,0.26,0.2)
+    finger2c = line(0.26,0.23,0.27,0.2)
+
+
+    #def plot(ax,ve):
+    #    vx,vy = zip(*ve)
+    #    ax.plot(vx,vy,'x-',lw=2,color='black')
+
+
+
+    #path = Path(verts, codes)
+
+    #fig = plt.figure()
+    #ax = fig.add_subplot(111)
+    #patch = patches.PathPatch(path, facecolor='none', lw=2)
+    #ax.add_patch(patch)
+
+    #xs, ys = zip(*verts)
+    #ax.plot(xs, ys, 'x--', lw=2, color='black', ms=10)
+
+    #Herb Drawing
+    #plot(ax,body)
+    #plot(ax,tire1)
+    #plot(ax,tire2)
+    #plot(ax,head)
+    #plot(ax,neck)
+    #plot(ax,arm1a)
+    #plot(ax,arm1b)
+    #plot(ax,arm2a)
+    #plot(ax,arm2b)
+
+    #plot(ax,finger1a)
+    #plot(ax,finger1b)
+    #plot(ax,finger1c)
+
+    #plot(ax,finger2a)
+    #plot(ax,finger2b)
+    #plot(ax,finger2c)
+
+    def Scale(points,factor):
+        newPoints = []
+        for p in points:
+            x,y = p
+            x = x*factor
+            y = y*factor
+            newPoints.append((x,y))
+        return newPoints
+
+    def Offset(points,xoff,yoff):
+        newPoints = []
+        for p in points:
+            x,y = p
+            x = x + xoff
+            y = y + yoff
+            newPoints.append((x,y))
+        return newPoints
+
+
+    def DrawHerb():
+        Draw = lambda r: dm.Draw(Offset(Scale(r,2),0.1,0.1))
+        
+        dm.GetColor("Blue")
+        Draw(body)
+        dm.GetColor("Blue")
+        Draw(tire1)
+        dm.GetColor("Blue")
+        Draw(tire2)
+        dm.GetColor("Blue")
+        Draw(head)
+        dm.GetColor("Blue")
+        Draw(neck)
+        dm.GetColor("Blue")
+        Draw(arm1a)
+        dm.GetColor("Blue")
+        Draw(arm1b)
+        dm.GetColor("Blue")
+        Draw(arm2a)
+        dm.GetColor("Blue")
+        Draw(arm2b)
+        dm.GetColor("Blue")
+        Draw(finger1a)
+        Draw(finger1b)
+        Draw(finger1c)
+        
+        dm.GetColor("Blue")
+        Draw(finger2a)
+        Draw(finger2b)
+        Draw(finger2c)
+
+
+
+
+    #Herb Word
+    H1 = line(0.02,0.05,0.02,0.0)
+    H2 = line(0.02,0.025,0.04,0.025)
+    H3 = line(0.04,0.05,0.04,0.0)
+
+    E1 = circle(0.06,0.05/4.0,0.05/4.0)
+    E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
+    endIndex = int(len(E1)*7/8.0)
+    E1=E1[0:endIndex]
+
+    R1 = circle(0.09,0.05/4.0-0.003,0.05/4.0)
+    startIndex = int(len(R1)*1/8.0)
+    endIndex = int(len(R1)*3/8.0)
+    R1=R1[startIndex:endIndex]
+    x = R1[-1][0]
+    R2 = line(x,0.025,x,0.0)
+
+    B1 = circle(0.12,0.05/4.0,0.05/4.0)
+    x = B1[int(len(B1)/2.0)][0]
+    B2 = line(x,0.05,x,0.00)
+
+
+    def DrawHerbName():
+        Draw = lambda r: dm.Draw(Offset(Scale(r,2),0.1,0.1))
+        dm.GetColor("Yellow")
+        Draw(H1)
+        dm.GetColor("Yellow")
+        Draw(H2)
+        dm.GetColor("Yellow")
+        Draw(H3)
+        dm.CleanBrush()
+        dm.CleanBrush()
+        dm.CleanBrush()
+        dm.GetColor("Blue")
+        Draw(E1)
+        dm.GetColor("Blue")
+        Draw(E2)
+        dm.CleanBrush()
+        dm.CleanBrush()
+        dm.CleanBrush()
+        dm.GetColor("Red")
+        Draw(R1)
+        dm.GetColor("Red")
+        Draw(R2)
+        dm.CleanBrush()
+        dm.CleanBrush()
+        dm.CleanBrush()
+        dm.GetColor("Blue")
+        Draw(B1)
+        dm.GetColor("Blue")
+        Draw(B2)
+
+
+
+
+
+
+
     pathSquare  = [numpy.array([0.1,0.1]),numpy.array([0.2,0.1]),numpy.array([0.2,0.2]), numpy.array([0.1,0.2]),numpy.array([0.1,0.1])]
     import IPython
     IPython.embed()
