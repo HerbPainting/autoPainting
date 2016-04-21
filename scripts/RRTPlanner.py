@@ -5,11 +5,12 @@ from random import seed
 
 class RRTPlanner(object):
 
-    def __init__(self, planning_env):
+    def __init__(self, planning_env,extendSize):
         self.planning_env = planning_env
-        self.scale = 5.0
+        self.scale = 1.0
         self.unit_change = 100.0
         seed(0)
+        self.extendSize = extendSize
         
 
     def Plan(self, start_config_list, goal_config_list, epsilon = 0.001):
@@ -19,10 +20,6 @@ class RRTPlanner(object):
         draw_plan = []
         
         self.planning_env.InitializePlot()
-        # TODO: Here you will implement the rrt planner
-        #  The return path should be an array
-        #  of dimension k x n where k is the number of waypoints
-        #  and n is the dimension of the robots configuration space
         #plan.append(start_config)
         #new_config = start_config_list[0]
         
@@ -36,7 +33,7 @@ class RRTPlanner(object):
             start_config = start_config_list[i]
             goal_config = goal_config_list[i]
             tree = RRTTree(self.planning_env, start_config)
-            while distance > epsilon and len(tree.vertices) < 20:
+            while distance > epsilon and len(tree.vertices) < 40:
                 
                 # r = random()
                 # if r > self.planning_env.p:
@@ -44,7 +41,7 @@ class RRTPlanner(object):
                 # else:
                     # target_config = goal_config
                 current_id, current_config = tree.GetNearestVertex(target_config)
-                new_config = self.planning_env.Extend(current_config, target_config)
+                new_config = self.planning_env.Extend(current_config, target_config,self.extendSize)
                 if new_config == None:
                     continue
                 else:

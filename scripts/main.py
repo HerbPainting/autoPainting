@@ -7,7 +7,7 @@
 
 from RRTPlanner import RRTPlanner
 from PlanningEnv import PlanningEnv
-#from TreeViz import TreeViz
+from HeuristicRRTPlanner import HeuristicRRTPlanner
 import numpy
 import argparse
 
@@ -15,8 +15,8 @@ def main(planning_env, planner):
 
 	raw_input('Press any key to begin planning')
 	world_extents = planning_env.getBoundaryLimits()
-	start_config = [[1,1], [3.9,3.9], [3.9,1], [1,3.9]]
-	goal_config = [[3.9,3.9], [1,1], [1,3.9], [3.9,1]]
+	start_config = [[1,1], [19.9,19.9], [19.9,1], [1,19.9]]
+	goal_config = [[19.9,19.9], [1,1], [1,19.9], [19.9,1]]
 	tree = planner.Plan(start_config, goal_config)
     #TreeViz.visualize(tree)
     
@@ -31,9 +31,9 @@ if __name__ == "__main__":
 	planning_env = PlanningEnv()
 
 	if args.planner == 'rrt':
-	    planner = RRTPlanner(planning_env)
-	elif args.planner == 'rrtconnect':
-	    planner = RRTConnectPlanner(planning_env)
+	    planner = RRTPlanner(planning_env,4)
+	elif args.planner == 'hrrt':
+	    planner = HeuristicRRTPlanner(planning_env)
 	else:
 	    print 'Unknown planner option: %s' % args.planner
 	    exit(0)

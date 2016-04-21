@@ -3,33 +3,65 @@ import matplotlib.pyplot as pl
 import random
 import math
 from time import time
-
+from math import cos, sin, floor, ceil
 class PlanningEnv(object):
     
     def __init__(self):
         
-        self.boundary_limits = numpy.array([[0., 0.], [4., 4.]])
+        self.boundary_limits = numpy.array([[0., 0.], [20., 20.]])
         #TODO: Load Costmap
-        self.raster_size = 1
+        self.raster_size = 0.1
         costmapcol = int(self.boundary_limits[1][1]/self.raster_size)
         costmaprow = int(self.boundary_limits[1][0]/self.raster_size)
         self.costmap = [[0 for x in range(costmapcol)] for x in range(costmaprow)]
 
         # TODO: Add obstacles
         self.obstacles = []
-        # for i in range(2):
-        #     for j in range(1):
-        #         self.costmap[i + costmaprow/2][j+costmapcol/2] = 255
-        #         self.obstacles.append([(i + costmaprow/2)*self.raster_size, (j+costmapcol/2)*self.raster_size ])
-        self.costmap[1][1] = 255
-        self.costmap[1][2] = 255
-        self.costmap[2][1] = 255
-        self.costmap[2][2] = 255
+        self.strokeLength = 4
+
+        # self.costmap[1][1] = 255
+        # self.costmap[1][2] = 255e
+        # self.costmap[2][1] = 255
+        # self.costmap[2][2] = 255
         
-        self.obstacles.append([1,1])
-        self.obstacles.append([1,2])
-        self.obstacles.append([2,1])
-        self.obstacles.append([2,2])
+        # self.obstacles.append([1,1])
+        # self.obstacles.append([1,2])
+        # self.obstacles.append([2,1])
+        # self.obstacles.append([2,2])
+        # Square in center obstacle for resolution = 1############
+        # for i in xrange(7,14):
+        #     for j in xrange(7,14):
+        #         self.costmap[i][j] = 255
+        #         self.obstacles.append([i,j])
+        ###############################
+        # self.setObstacles([ [(8,8),(12,12l)] ])
+        drawlines  = []
+        #Supposed smilie face
+        #eye1
+        drawlines.append([(5,16),(7,16)])
+        drawlines.append([(5,16),(5,11)])
+        drawlines.append([(7,16),(7,11)])
+        drawlines.append([(5,11),(7,11)])
+        #eye2
+        drawlines.append([(13,16),(15,16)])
+        drawlines.append([(13,16),(13,11)])
+        drawlines.append([(15,16),(15,11)])
+        drawlines.append([(13,11),(15,11)])
+        #nose
+        drawlines.append([(9,12),(11,12)])
+        drawlines.append([(9,12),(9,8)])
+        drawlines.append([(11,12),(11,8)])
+        drawlines.append([(9,8),(11,8)])
+        #mouth
+        drawlines.append([(6,6),(14,6)])
+        drawlines.append([(6,6),(6,4)])
+        drawlines.append([(14,6),(14,4)])
+        drawlines.append([(6,4),(14,4)])
+
+
+        self.setObstacles(drawlines)
+
+
         # goal sampling probability
         self.p = 0.1
 
@@ -67,58 +99,81 @@ class PlanningEnv(object):
 
         return numpy.linalg.norm(numpy.asarray(end_config) - numpy.asarray(start_config))
 
-    def Extend(self, start_config, end_config):
+    def ComputeHeuristicCost(self,start_config, goal_config):
+
+        return numpy.linalg.norm(numpy.asarray(goal_config) - numpy.asarray(start_config))
+
+    def Extend(self, start_config, end_config,extendSize):
         
         #   A function which attempts to extend from 
         #   a start configuration to a goal configuration
         #
+        dist = self.ComputeDistance(start_config, end_config)
+        number_of_steps = int(dist*40)
+        x = numpy.linspace(start_config[0], end_config[0], number_of_steps)
+        y = numpy.linspace(start_config[1], end_config[1], number_of_steps)
+        config_to_return = None
+        for i in xrange(1,number_of_steps):
+            temp_config = numpy.array([x[i], y[i]])
+            inCollision = self.collision_checker(temp_config)            
+            if inCollision:
+                return config_to_return
+            else:
+    			config_to_return = temp_config
+    	return config_to_return
+        # m = math.atan2(end_config[1] - start_config[1],end_config[0] - start_config[0])
+        # dMax = extendSize
+        # totalDistance = numpy.linalg.norm(end_config - start_config)
+        # d = 0
+        # while d < dMax and d <= totalDistance:
+        #     x2 = start_config[0] + d*math.cos(m)
+        #     y2 = start_config[1] + d*math.sin(m)
+        #     temp_config = numpy.array([x2,y2])
+        #     if x2 < 0 or x2 >= (len(self.costmap[0])) or y2 < 0 or y2 >= (len(self.costmap)):
+        #         return None 
+        #     inCollision = self.collision_checker(temp_config)
+        #     if inCollision:
+        #         return None
+        #     d += self.raster_size*0.1
+        # if inCollision:
+        #     return None
+        # else:
+        #     return temp_config
+
         
-    	 # dist = self.ComputeDistance(start_config, end_config)
-    	 # number_of_steps = int(dist*20)
-    	 # x = numpy.linspace(start_config[0], end_config[0], number_of_steps)
-    	 # y = numpy.linspace(start_config[1], end_config[1], number_of_steps)
-    	# config_to_return = None
-
-    	# for i in xrange(1,number_of_steps):
-    	# 	temp_config = numpy.array([x[i], y[i]])
-    	# 	inCollision = self.collision_checker(temp_config)
-    	# 	if inCollision:
-    	# 		return config_to_return
-    	# 	else:
-    	# 		config_to_return = temp_config
-    	# return config_to_return
-        m = math.atan2(end_config[1] - start_config[1],end_config[0] - start_config[0])
-        d = 0.5
-        x2 = start_config[0] + d*math.cos(m)
-        y2 = start_config[1] + d*math.sin(m)
-        temp_config = numpy.array([x2,y2])
-        if x2 < 0 or x2 >= (len(self.costmap[0])) or y2 < 0 or y2 >= (len(self.costmap)):
-            return None 
-        inCollision = self.collision_checker(temp_config)
-        if inCollision:
-            return None
-        else:
-            return temp_config
-
+    def setObstacles(self, lines):
         
+        for line in lines:
+            inflatedLines = []
+            pt1 = numpy.asarray(line[0])
+            pt2 = numpy.asarray(line[1])
+            length = numpy.linalg.norm(pt2 - pt1)
+            l = 0.0
+            deltaLength = self.raster_size
+            m = math.atan2(pt2[1]-pt1[1],pt2[0]-pt1[0])
+            #Inflate the obstacles by adding lines parallel to the specified line at intervales of raster_size and upto strokeLength
+            for i in xrange(-self.strokeLength, self.strokeLength + 1):
+                for j in xrange(-self.strokeLength, self.strokeLength + 1):
+                    inflatedLines.append([ (pt1[0] + i*(self.raster_size/2)*(-1.0*sin(m)), pt1[1] + j*(self.raster_size/2)*cos(m)), (pt2[0] + i*(self.raster_size/2)*(-1.0*sin(m)), pt2[1] + j*(self.raster_size/2)*cos(m)) ])
+            # inflatedLines = line
 
-    # def ShortenPath(self, path, timeout=5.0):
-        
-    #     # 
-    #     # A function which performs path shortening
-    #     #  on the given path.  Terminate the shortening after the 
-    #     #  given timout (in seconds).
-    #     #
-    #     t = time()
-    #     while time() - t < timeout:
-    #         idx1 = random.randint(0,len(path)-1)
-    #         idx2 = random.randint(idx1,len(path)-1)
-    #         q_new = self.Extend(path[idx1], path[idx2])
-    #         if q_new != None:
-    #             if numpy.array_equal(q_new,path[idx2]):
-    #                 path[idx1+1:idx2] = []
-    #     return path
+            #Now add obstacles along the inflated lines
+            for inflatedLine in inflatedLines:
+                pt1i = numpy.asarray(inflatedLine[0])
+                pt2i = numpy.asarray(inflatedLine[1])
+                lengthi = numpy.linalg.norm(pt2i - pt1i)
+                li = 0.0
+                deltaLengthi = self.raster_size
+                mi = math.atan2(pt2i[1]-pt1i[1],pt2i[0]-pt1i[0])
+                while li < lengthi:
+                    newConfig = numpy.array([pt1i[0] + li*cos(mi),pt1i[1] + li*sin(mi)])
+                    discreteConf = self.configurationToGridCoordinate(newConfig)
+                    self.costmap[discreteConf[1]][discreteConf[0]] = 255
+                    self.obstacles.append(discreteConf)
+                    li += deltaLengthi
 
+
+    # def ExtendHrrt()
 
     def InitializePlot(self):
         self.fig = pl.figure()
@@ -145,10 +200,10 @@ class PlanningEnv(object):
         plot_x = []
         plot_y = []
         for obs in self.obstacles:
-            
-            plot_x.append(obs[0])
-            plot_y.append(obs[1])
-        #pl.plot(plot_x,plot_y,'ro')
+            obsConfig = self.gridCoordinateToConfiguration(obs)
+            plot_x.append(obsConfig[0])
+            plot_y.append(obsConfig[1])
+        pl.plot(plot_x,plot_y,'r.')
                
                      
         pl.ion()
@@ -161,3 +216,13 @@ class PlanningEnv(object):
         pl.draw()
     def getBoundaryLimits(self):
         return self.boundary_limits
+
+    def configurationToGridCoordinate(self,config):
+        config = numpy.asarray(config)
+        discreteConf = numpy.array([int(ceil(config[0]/self.raster_size)), int(ceil(config[1]/self.raster_size))])
+        return discreteConf
+    def gridCoordinateToConfiguration(self,coord):
+        coord = numpy.asarray(coord)
+        m = [self.raster_size]*2
+        config = numpy.multiply(numpy.add(coord,m),self.raster_size)
+        return config
