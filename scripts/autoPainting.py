@@ -106,7 +106,7 @@ def planeFromPoint(a,b,c):
     normal = numpy.cross(l1,l2)
 
 class DMConfig(object):
-    poses = ["Red","Blue","Yellow","Clean","Canvas","PreColor"]
+    poses = ["Red","Blue","Yellow","Clean","PreColor","Dab","Canvas"]
     def __init__(self,robot,arm,hand):
         self.poses = {}
         for color in DMConfig.poses:
@@ -221,17 +221,27 @@ class DMConfig(object):
 	
         dist = math.sqrt(math.pow(plane[0],2) + math.pow(plane[1],2) + math.pow(plane[2],2))
 
-	plane = plane / dist
+        plane = plane / dist
         
         self.poses["size"]   = numpy.array([width,height])      
         self.poses["plane"]  = plane
         self.poses["corner"] = blPt 
-  
+        self.poses["blPt"] = blPt
+        self.poses["tlPt"] = tlPt
+        self.poses["brPt"] = brPt
+        self.poses["vA"] = vA
+        self.poses["vB"] = vB
+        self.poses["height"] = height
+        self.poses["width"] = width
            
     def save(self,name):
         print "save"
         import pickle
         pickle.dump(self.poses,open(name,"wb"))
+
+    def loadConfig(self,configFileName):
+        import pickle
+        self.poses = pickle.load(open(configFileName,"rb")) 
 
 class DrawingManager(object):
     def __init__(self,env,robot,arm,configFileName):
@@ -290,12 +300,12 @@ class DrawingManager(object):
         
         tNorm = numpy.dot(rtf,normalTf)
         newNormalVector = numpy.array([tNorm[0][3],tNorm[1][3],tNorm[2][3]])
-        armLocation = center + newNormalVector * -self.canvasOffset
+        armLocation = self.canvasCorner + newNormalVector * -self.canvasOffset
         tf = numpy.eye(4)
         tf[0][3] = armLocation[0]
         tf[1][3] = armLocation[1]
         tf[2][3] = armLocation[2]
-        #self.currentCanvasPose = numpy.array([0,0])
+        self.currentCanvasPose = numpy.array([0,0])
         tf = numpy.dot(tf,getYRotation(math.pi/2))
         traj = self._MoveAlongLine(tf)
         self.robot.ExecutePath(traj)
@@ -319,6 +329,8 @@ class DrawingManager(object):
                   
 
     def _MoveAcrossCanvas(self,point):
+        print point
+        print self.currentCanvasPose
         delta = self.currentCanvasPose - point
         dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
         rTf = self.robot.GetTransform()
@@ -427,22 +439,31 @@ class DrawingManager(object):
         #self.arm.PlanToConfiguration
     def CleanBrush(self):
         self.GetColor("Clean")
+        self.GetColor("Dab")
         
 
     def Draw(self,points):
+
+        finalPoints = []
+        for p in points:
+            x,y = p
+            finalPoints.append(numpy.array([x,-y]))
+
+        points = finalPoints
+            
         #Move to the offset center of the plane
         try:
             self.arm.PlanToConfiguration(self.config["Canvas"]["DOF"],execute=True)
             #self.arm.hand.PlanToConfiguration(self.config["Canvas"]["HandDOF"],execute=True)
             initial = points[0]
             self._MoveToInitialPreDraw(initial)
-            self.currentCanvasPose = initial
+            #self.currentCanvasPose = initial
             #initalPreDrawPath = self._MoveToInitialPreDraw()        
             #robot.ExecutePath(initalPreDrawPath)
 
             #Move to the initial point of the path
-            #initial = points[0]
-            #robot.ExecutePath(self._MoveAcrossCanvas(initial))
+            initial = points[0]
+            robot.ExecutePath(self._MoveAcrossCanvas(initial))
         except:
             print "Hello"
             return
@@ -484,6 +505,8 @@ class DrawingManager(object):
             print "Planning Draw Path Failed"
             self.robot = realRobot
             self.arm = realArm
+            import traceback
+            traceback.print_exc()
             return
         finally:
             #Reset
@@ -495,7 +518,7 @@ class DrawingManager(object):
         try:
             #Set the speed limits,  this should be controled by the --sim argument
             limits = origLimits/2
-            self.arm.SetVelocityLimits(limits,5)
+            self.arm.SetVelocityLimits(limits,8)
 
             robot.ExecutePath(performTraj)
         except:
@@ -601,7 +624,7 @@ if __name__ == "__main__":
     table.SetTransform(table_pose)
 
     #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,"defaultLatest")
+    dm = DrawingManager(env,robot,robot.right_arm,"Final")
     
 
 
@@ -610,7 +633,7 @@ if __name__ == "__main__":
 # RRT planner
 
     planning_env = PlanningEnv()
-    planner = RRTPlanner(planning_env)
+    planner = RRTPlanner(planning_env,3)
  
 
 
@@ -763,38 +786,61 @@ if __name__ == "__main__":
         return newPoints
 
 
+
+
+    def convertPoints(pts):
+        out = []
+        for p in pts:
+            out.append(numpy.array(p))
+        return out
+
+    def Sanitize(points):
+        previousPoint = None
+        finalPoints = []
+        for p in points:
+            if previousPoint != None:
+                if p[0] != previousPoint[0] or p[1] != previousPoint[1]:
+                    finalPoints.append(p)
+            else:
+                finalPoints.append(p)
+            previousPoint = p
+        return finalPoints
+
     def DrawHerb():
-        Draw = lambda r: dm.Draw(Offset(Scale(r,2),0.1,0.1))
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,0.5),-0.01,0.02))))
         
         dm.GetColor("Blue")
         Draw(body)
-        dm.GetColor("Blue")
+        #dm.GetColor("Blue")
         Draw(tire1)
-        dm.GetColor("Blue")
+        #dm.GetColor("Blue")
         Draw(tire2)
-        dm.GetColor("Blue")
+        #dm.GetColor("Blue")
         Draw(head)
-        dm.GetColor("Blue")
+        #dm.GetColor("Blue")
         Draw(neck)
-        dm.GetColor("Blue")
-        Draw(arm1a)
-        dm.GetColor("Blue")
-        Draw(arm1b)
-        dm.GetColor("Blue")
-        Draw(arm2a)
-        dm.GetColor("Blue")
-        Draw(arm2b)
-        dm.GetColor("Blue")
-        Draw(finger1a)
-        Draw(finger1b)
-        Draw(finger1c)
+        #dm.GetColor("Blue")
+        Draw(arm1a + arm2a+finger1b)
+        #dm.GetColor("Blue")
+        Draw(arm1b + arm2b + finger2b)
+        #dm.GetColor("Blue")
+        #Draw(arm2a)
+        #dm.GetColor("Blue")
+        #Draw(arm2b)
+        #dm.GetColor("Blue")
+        #Draw(finger1a)
+        #Draw(finger1b)
+        #Draw(finger1c)
         
-        dm.GetColor("Blue")
-        Draw(finger2a)
-        Draw(finger2b)
-        Draw(finger2c)
+        #dm.GetColor("Blue")
+        #Draw(finger2a)
+        #Draw(finger2b)
+        #Draw(finger2c)
 
 
+
+
+    
 
 
     #Herb Word
@@ -805,7 +851,7 @@ if __name__ == "__main__":
     E1 = circle(0.06,0.05/4.0,0.05/4.0)
     E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
     endIndex = int(len(E1)*7/8.0)
-    E1=E1[0:endIndex]
+    E1=E1[0:endIndex-1]
 
     R1 = circle(0.09,0.05/4.0-0.003,0.05/4.0)
     startIndex = int(len(R1)*1/8.0)
@@ -820,38 +866,34 @@ if __name__ == "__main__":
 
 
     def DrawHerbName():
-        Draw = lambda r: dm.Draw(Offset(Scale(r,2),0.1,0.1))
-        dm.GetColor("Yellow")
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.00))))
+        #dm.GetColor("Yellow")
         Draw(H1)
-        dm.GetColor("Yellow")
+        #dm.GetColor("Yellow")
         Draw(H2)
-        dm.GetColor("Yellow")
+        #dm.GetColor("Yellow")
         Draw(H3)
-        dm.CleanBrush()
-        dm.CleanBrush()
-        dm.CleanBrush()
-        dm.GetColor("Blue")
+        #dm.CleanBrush()
+        #dm.GetColor("Blue")
         Draw(E1)
-        dm.GetColor("Blue")
+        #dm.GetColor("Blue")
         Draw(E2)
-        dm.CleanBrush()
-        dm.CleanBrush()
-        dm.CleanBrush()
-        dm.GetColor("Red")
+        #dm.CleanBrush()
+        #dm.GetColor("Red")
         Draw(R1)
-        dm.GetColor("Red")
+        #dm.GetColor("Red")
         Draw(R2)
-        dm.CleanBrush()
-        dm.CleanBrush()
-        dm.CleanBrush()
-        dm.GetColor("Blue")
+        #dm.CleanBrush()
+        #dm.GetColor("Blue")
         Draw(B1)
-        dm.GetColor("Blue")
+        #dm.GetColor("Blue")
         Draw(B2)
 
 
 
-
+    test = numpy.array([ 0, -1.43298366, -0.87872026,  1.2935832 , -2.41340378,-0.4731085 , -0.11837519])
+    test[0] = 0
+    robot.left_arm.SetDOFValues(test)
 
 
 
