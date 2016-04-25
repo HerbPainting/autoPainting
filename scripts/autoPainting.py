@@ -76,18 +76,18 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
     c = normalUnitVector[2]
 
     y = ( -b*1-c*0 ) / a * -1
-    z = ( -b*0-c*1 ) / a * -1
+    z = ( -b*0-c*1 ) / a 
     #z = ( -a*1-b*0 ) / c
     
     if math.isnan(y):
         tfRy = numpy.eye(4)
     else:
-        tfRy = getYRotation(math.atan(y))
+        tfRy = getZRotation(math.atan(y))
     
     if math.isnan(z):
         tfRz = numpy.eye(4)
     else:
-        tfRz = getZRotation(math.atan(z))
+        tfRz = getYRotation(math.atan(z))
     tfRx = numpy.eye(4)
     tf = numpy.eye(4)
 
