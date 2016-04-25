@@ -637,7 +637,7 @@ if __name__ == "__main__":
 # RRT planner
 
     planning_env = PlanningEnv()
-    planner = mixedRRTPlanner(planning_env,4)
+    planner = mixedRRTPlanner(planning_env,5)
  
 
 

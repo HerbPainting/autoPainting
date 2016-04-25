@@ -36,7 +36,7 @@ if __name__ == "__main__":
 	planning_env = PlanningEnv()
 
 	if args.planner == 'rrt':
-	    planner = mixedRRTPlanner(planning_env,5)
+	    planner = mixedRRTPlanner(planning_env,4)
 	elif args.planner == 'hrrt':
 	    planner = HeuristicRRTPlanner(planning_env)
 	else:

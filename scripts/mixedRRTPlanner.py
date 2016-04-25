@@ -9,7 +9,7 @@ class mixedRRTPlanner(object):
         self.planning_env = planning_env
         self.scale = 1.0
         self.unit_change = 100.0
-        
+        seed(0)
         self.extendSize = extendSize
         self.boundary_limits = planning_env.getBoundaryLimits()
 
