@@ -76,18 +76,18 @@ def getTransformFromPlane(normalUnitVector,canvasCorner):
     c = normalUnitVector[2]
 
     y = ( -b*1-c*0 ) / a * -1
-    z = ( -b*0-c*1 ) / a * -1
+    z = ( -b*0-c*1 ) / a 
     #z = ( -a*1-b*0 ) / c
     
     if math.isnan(y):
         tfRy = numpy.eye(4)
     else:
-        tfRy = getYRotation(math.atan(y))
+        tfRy = getZRotation(math.atan(y))
     
     if math.isnan(z):
         tfRz = numpy.eye(4)
     else:
-        tfRz = getZRotation(math.atan(z))
+        tfRz = getYRotation(math.atan(z))
     tfRx = numpy.eye(4)
     tf = numpy.eye(4)
 
@@ -352,8 +352,11 @@ class DrawingManager(object):
         currentVector = vectorizeTF(realCurrentPoint)
 
         delta = currentVector-newVector
+        print delta
         d = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2))
         normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
+        print "Normal Delta"
+        print normalDelta
 
         self.currentCanvasPose = point
 
@@ -685,8 +688,8 @@ if __name__ == "__main__":
     def circle(x,y,radius):
         import math
         points = []
-        for i in xrange(21):
-            rad = i * 3.14/40
+        for i in xrange(5):
+            rad = i * math.pi/8
             xp = math.sin(rad) * radius
             yp = math.cos(rad) * radius
             points.append((xp,yp))
@@ -799,7 +802,7 @@ if __name__ == "__main__":
         finalPoints = []
         for p in points:
             if previousPoint != None:
-                if p[0] != previousPoint[0] or p[1] != previousPoint[1]:
+                if abs(p[0] - previousPoint[0]) > 0.001 or abs(p[1] - previousPoint[1]) > 0.001 :
                     finalPoints.append(p)
             else:
                 finalPoints.append(p)
@@ -888,7 +891,6 @@ if __name__ == "__main__":
         Draw(B1)
         #dm.GetColor("Blue")
         Draw(B2)
-
 
 
     test = numpy.array([ 0, -1.43298366, -0.87872026,  1.2935832 , -2.41340378,-0.4731085 , -0.11837519])
