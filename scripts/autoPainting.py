@@ -845,30 +845,30 @@ if __name__ == "__main__":
 
     
 
-
-    #Herb Word
-    H1 = line(0.02,0.05,0.02,0.0)
-    H2 = line(0.02,0.025,0.04,0.025)
-    H3 = line(0.04,0.05,0.04,0.0)
-
-    E1 = circle(0.06,0.05/4.0,0.05/4.0)
-    E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
-    endIndex = int(len(E1)*7/8.0)
-    E1=E1[0:endIndex-1]
-
-    R1 = circle(0.09,0.05/4.0-0.003,0.05/4.0)
-    startIndex = int(len(R1)*1/8.0)
-    endIndex = int(len(R1)*3/8.0)
-    R1=R1[startIndex:endIndex]
-    x = R1[-1][0]
-    R2 = line(x,0.025,x,0.0)
-
-    B1 = circle(0.12,0.05/4.0,0.05/4.0)
-    x = B1[int(len(B1)/2.0)][0]
-    B2 = line(x,0.05,x,0.00)
-
-
     def DrawHerbName():
+        #Herb Word
+        H1 = line(0.02,0.05,0.02,0.0)
+        H2 = line(0.02,0.025,0.04,0.025)
+        H3 = line(0.04,0.05,0.04,0.0)
+
+        E1 = circle(0.06,0.05/4.0,0.05/4.0)
+        E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
+        endIndex = int(len(E1)*7/8.0)
+        E1=E1[0:endIndex-1]
+
+        R1 = circle(0.09,0.05/4.0-0.003,0.05/4.0)
+        startIndex = int(len(R1)*1/8.0)
+        endIndex = int(len(R1)*3/8.0)
+        R1=R1[startIndex:endIndex]
+        x = R1[-1][0]
+        R2 = line(x,0.025,x,0.0)
+
+        B1 = circle(0.12,0.05/4.0,0.05/4.0)
+        x = B1[int(len(B1)/2.0)][0]
+        B2 = line(x,0.05,x,0.00)
+
+
+
         Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.00))))
         #dm.GetColor("Yellow")
         Draw(H1)
@@ -891,6 +891,69 @@ if __name__ == "__main__":
         Draw(B1)
         #dm.GetColor("Blue")
         Draw(B2)
+
+
+    def DrawHerbName2():
+        
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.00))))
+        #Herb Word
+        H1 = line(0.02,0.05,0.02,0.0)
+        H2 = line(0.02,0.025,0.04,0.025)
+        H3 = line(0.04,0.05,0.04,0.0)
+
+
+        Draw(H1)
+        Draw(H2)
+        Draw(H3)
+
+        E1 = line(0.06,0.05,0.06,0.0)
+        E2 = line(0.06,0.05,0.08,0.05)
+        E3 = line(0.06,0.025,0.08,0.025)
+        E4 = line(0.06,0.00,0.08,0.00)
+        #E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
+
+
+        Draw(E1)
+        Draw(E2)
+        Draw(E3)
+        Draw(E4)
+
+
+        R1 = line(0.10,0.05,0.10,0.0)
+        R2 = line(0.10,0.05,0.12,0.05*3.0/4.0)
+        R3 = line(0.10,0.025,0.12,0.05*3.0/4.0)
+        R4 = line(0.10,0.025,0.12,0.00)
+
+
+        #R1 = circle(0.09,0.05/4.0-0.003,0.05/4.0)
+        #startIndex = int(len(R1)*1/8.0)
+        #endIndex = int(len(R1)*3/8.0)
+        #R1=R1[startIndex:endIndex]
+
+        #x = R1[-1][0]
+
+        #R2 = line(x,0.025,x,0.0)
+
+        Draw(R1)
+        Draw(R2)
+        Draw(R3)
+        Draw(R4)
+
+
+
+
+        B1 = line(0.14,0.05,0.14,0.0)
+        B2 = line(0.14,0.05,0.16,0.05*3.0/4.0)
+        B3 = line(0.14,0.025,0.16,0.05*3.0/4.0)
+        B4 = line(0.14,0.025,0.16,0.05*1.0/4.0)
+        B5 = line(0.14,0.0,0.16,0.05*1.0/4.0)
+
+        
+        Draw(B1)
+        Draw(B2)
+        Draw(B3)
+        Draw(B4)
+        Draw(B5)
 
 
     test = numpy.array([ 0, -1.43298366, -0.87872026,  1.2935832 , -2.41340378,-0.4731085 , -0.11837519])
