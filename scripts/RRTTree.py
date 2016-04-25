@@ -31,3 +31,12 @@ class RRTTree(object):
     def AddEdge(self, sid, eid):
         self.edges[eid] = sid
 
+    def GetithNearestVertex(self,config,i):
+        dists = []
+        for v in self.vertices:
+            dists.append(self.planning_env.ComputeDistance(config, v))
+
+        vid, vdist = sorted(enumerate(dists), key=operator.itemgetter(1))[i]
+
+        return vid, self.vertices[vid]
+

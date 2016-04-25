@@ -3,12 +3,14 @@ import matplotlib.pyplot as pl
 import random
 import math
 from time import time
-from math import cos, sin, floor, ceil
+from math import cos, sin, floor, ceil,sqrt
+from scipy.ndimage.filters import gaussian_filter
 class PlanningEnv(object):
     
     def __init__(self):
         
-        self.boundary_limits = numpy.array([[0., 0.], [20., 20.]])
+        self.boundary_limits = numpy.array([[2., 2.], [13., 13.]])
+        # self.drawFocus = numpy.array([[5., 5.], [15., 15]] )
         #TODO: Load Costmap
         self.raster_size = 0.1
         costmapcol = int(self.boundary_limits[1][1]/self.raster_size)
@@ -35,35 +37,83 @@ class PlanningEnv(object):
         #         self.obstacles.append([i,j])
         ###############################
         # self.setObstacles([ [(8,8),(12,12l)] ])
-        drawlines  = []
+        self.obstacleLines  = []
         #Supposed smilie face
         #eye1
-        drawlines.append([(5,16),(7,16)])
-        drawlines.append([(5,16),(5,11)])
-        drawlines.append([(7,16),(7,11)])
-        drawlines.append([(5,11),(7,11)])
-        #eye2
-        drawlines.append([(13,16),(15,16)])
-        drawlines.append([(13,16),(13,11)])
-        drawlines.append([(15,16),(15,11)])
-        drawlines.append([(13,11),(15,11)])
-        #nose
-        drawlines.append([(9,12),(11,12)])
-        drawlines.append([(9,12),(9,8)])
-        drawlines.append([(11,12),(11,8)])
-        drawlines.append([(9,8),(11,8)])
-        #mouth
-        drawlines.append([(6,6),(14,6)])
-        drawlines.append([(6,6),(6,4)])
-        drawlines.append([(14,6),(14,4)])
-        drawlines.append([(6,4),(14,4)])
+        # drawlines.append([(5,16),(7,16)])
+        # drawlines.append([(5,16),(5,11)])
+        # drawlines.append([(7,16),(7,11)])
+        # drawlines.append([(5,11),(7,11)])
+        # #eye2
+        # drawlines.append([(13,16),(15,16)])
+        # drawlines.append([(13,16),(13,11)])
+        # drawlines.append([(15,16),(15,11)])
+        # drawlines.append([(13,11),(15,11)])
+        # #nose
+        # drawlines.append([(9,12),(11,12)])
+        # drawlines.append([(9,12),(9,8)])
+        # drawlines.append([(11,12),(11,8)])
+        # drawlines.append([(9,8),(11,8)])
+        # #mouth
+        # drawlines.append([(6,6),(14,6)])
+        # drawlines.append([(6,6),(6,4)])
+        # drawlines.append([(14,6),(14,4)])
+        # drawlines.append([(6,4),(14,4)])
+        #Herb Obstacle
+        # #body
+        # self.rectObstacle(0.1,0.1,0.2,0.3)
+        # #tire1
+        # self.rectObstacle(0.08,0.08,0.1,0.18)
+        # #tire2
+        # self.rectObstacle(0.22,0.08,0.20,0.18)
+        # #head
+        # self.rectObstacle(0.13,0.36,0.17,0.39)
+        # #neck
+        # self.rectObstacle(0.15,0.3,0.15,0.36)
+        # #arm1a
+        # self.lineObstacle(0.1,0.25,0.04,0.3)
+        # #arm1b
+        # self.lineObstacle(0.2,0.25,0.26,0.3)
+        # #arm2a
+        # self.lineObstacle(0.04,0.3,0.04,0.23)
+        # #arm2b
+        # self.lineObstacle(0.26,0.3,0.26,0.23)
+        # #finger1a
+        # self.lineObstacle(0.04,0.23,0.03,0.2)
+        # #finger1b
+        # self.lineObstacle(0.04,0.23,0.04,0.2)
+        # #finger1c
+        # self.lineObstacle(0.04,0.23,0.05,0.2)
+        # #finger2a
+        # self.lineObstacle(0.26,0.23,0.25,0.2)
+        # #finger2b  
+        # self.lineObstacle(0.26,0.23,0.26,0.2)
+        # #finger2c  
+        # self.lineObstacle(0.26,0.23,0.27,0.2)
+        self.rectObstacle(7,7,9,9)
+        self.rectObstacle(6.5,7,7,6)
+        self.rectObstacle(9,7,9.5,6)
 
 
-        self.setObstacles(drawlines)
+        self.setObstacles(self.obstacleLines)
+        self.bloatedCostMap = self.createBloatedCostMap(self.costmap,4)
+        self.gradientMap = self.createGradientMap(self.bloatedCostMap)
 
-
+        self.cs = numpy.cumsum(self.gradientMap)
         # goal sampling probability
         self.p = 0.1
+        self.coveragep = 0.4
+
+    
+    def rectObstacle(self, bx,by,tx,ty):
+        self.obstacleLines.append([(bx,by),(bx,ty)])
+        self.obstacleLines.append([(bx,ty),(tx,ty)])
+        self.obstacleLines.append([(tx,ty),(tx,by)])
+        self.obstacleLines.append([(tx,by),(bx,by)])
+
+
+    def lineObstacle(self,bx,by,tx,ty):
+        self.obstacleLines.append([(bx,by), (tx,ty)])
 
     def SetGoalParameters(self, goal_config, p = 0.1):
         self.goal_config = goal_config
@@ -77,17 +127,24 @@ class PlanningEnv(object):
 
 
 
-    def GenerateRandomConfiguration(self):
+    def GenerateRandomConfiguration(self, coverage):
         config = [0] * 2;
         lower_limits, upper_limits = self.boundary_limits
         #
         # Generate and return a random configuration
         #
         inCollision = True
-        while inCollision:
-        	config[0] = random.uniform(lower_limits[0], upper_limits[0])
-        	config[1] = random.uniform(lower_limits[1], upper_limits[1])
-        	inCollision = self.collision_checker(config)         	        
+        if coverage:
+            
+            while inCollision:
+        	   config[0] = random.uniform(lower_limits[0], upper_limits[0])
+        	   config[1] = random.uniform(lower_limits[1], upper_limits[1])
+        	   inCollision = self.collision_checker(config)
+        else:
+            while inCollision:
+                idx = self.wc(self.gradientMap, self.cs)
+                config = self.gridCoordinateToConfiguration(list(idx))
+                inCollision = self.collision_checker(config)
         
         return numpy.array(config)
 
@@ -197,13 +254,13 @@ class PlanningEnv(object):
                      bb.pos()[1] + bb.extents()[1],
                      bb.pos()[1] + bb.extents()[1],
                      bb.pos()[1] - bb.extents()[1]], 'r')"""
-        plot_x = []
-        plot_y = []
-        for obs in self.obstacles:
-            obsConfig = self.gridCoordinateToConfiguration(obs)
-            plot_x.append(obsConfig[0])
-            plot_y.append(obsConfig[1])
-        pl.plot(plot_x,plot_y,'r.')
+        # plot_x = []
+        # plot_y = []
+        # for obs in self.obstacles:
+        #     obsConfig = self.gridCoordinateToConfiguration(obs)
+        #     plot_x.append(obsConfig[0])
+        #     plot_y.append(obsConfig[1])
+        # pl.plot(plot_x,plot_y,'r.')
                
                      
         pl.ion()
@@ -226,3 +283,32 @@ class PlanningEnv(object):
         m = [self.raster_size]*2
         config = numpy.multiply(numpy.add(coord,m),self.raster_size)
         return config
+
+    def createBloatedCostMap(self,costmap,sigma):
+        blurredCostMap = gaussian_filter(costmap, sigma)
+        return blurredCostMap
+    
+    def createGradientMap(self,costmap):
+        xGradient = [[0 for x in range(len(costmap[0]))] for x in range(len(costmap))]
+        yGradient = [[0 for x in range(len(costmap[0]))] for x in range(len(costmap))]
+        resultantGradient = [[0 for x in range(len(costmap[0]))] for x in range(len(costmap))]
+
+        # for i in range(1,len(costmap)-1):
+        #     for j in range(1,len(costmap[0])-1):
+        #         xGradient[i][j] = (costmap[i][j-1] - costmap[i][j+1])/2.0
+        #         yGradient[i][j] = (costmap[i-1][j] - costmap[i+1][j])/2.0
+        #         resultantGradient[i][j] = sqrt(xGradient[i][j]*xGradient[i][j] + yGradient[i][j]*yGradient[i][j])
+        xGradient = numpy.gradient(numpy.asarray(costmap))[1]
+        yGradient = numpy.gradient(numpy.asarray(costmap))[0]
+
+        squaredGradient = numpy.add(numpy.square(xGradient), numpy.square(yGradient))
+
+        resultantGradient = numpy.sqrt(squaredGradient)
+
+        return resultantGradient
+
+    #Sampling from 2D array wit weights
+    def wc(self,weights,cs):
+        idx = cs.searchsorted(numpy.random.random() * cs[-1], 'right')
+        
+        return numpy.unravel_index(idx, weights.shape)

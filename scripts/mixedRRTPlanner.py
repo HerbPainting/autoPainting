@@ -3,15 +3,16 @@ from RRTTree import RRTTree
 from random import random
 from random import seed
 
-class RRTPlanner(object):
+class mixedRRTPlanner(object):
 
     def __init__(self, planning_env,extendSize):
         self.planning_env = planning_env
         self.scale = 1.0
         self.unit_change = 100.0
-        seed(0)
+        
         self.extendSize = extendSize
         self.boundary_limits = planning_env.getBoundaryLimits()
+
 
     def Plan(self, start_config_list, goal_config_list, epsilon = 0.001):
         
@@ -28,19 +29,27 @@ class RRTPlanner(object):
         for i in xrange(N):
             print "Pass: ", i+1
             
-            distance = 1000
+            
             
             start_config = start_config_list[i]
             goal_config = goal_config_list[i]
             tree = RRTTree(self.planning_env, start_config)
-            while distance > epsilon and len(tree.vertices) < 20:
+            while len(tree.vertices) < 20:
                 
-                # r = random()
-                # if r > self.planning_env.p:
-                target_config = self.planning_env.GenerateRandomConfiguration()
-                # else:
-                    # target_config = goal_config
+                r = random()
+                if r < self.planning_env.coveragep:
+                	coverage = True
+                else:
+                	coverage = False
+                target_config = self.planning_env.GenerateRandomConfiguration(coverage)
+             	
                 current_id, current_config = tree.GetNearestVertex(target_config)
+                #Keep sampling till large length is not obtained
+                count = 0
+                while self.planning_env.ComputeDistance(current_config,target_config) < (self.extendSize) and count < len(tree.vertices) and not coverage:
+                	current_id, current_config = tree.GetithNearestVertex(target_config,count)
+                	count += 1
+                
                 new_config = self.planning_env.Extend(current_config, target_config,self.extendSize)
                 if new_config == None:
                     continue
@@ -54,16 +63,7 @@ class RRTPlanner(object):
                     draw_plan.append((pt1,pt2)) #of the form (prev,next)
                     tree.AddEdge(current_id, new_id)
                     self.planning_env.PlotEdge(tree.vertices[current_id], tree.vertices[new_id])
-                    distance = self.planning_env.ComputeDistance(new_config, goal_config)
-                   
-            if distance <= epsilon:
-                print "reached"
-        # while new_id != 0:
-        #     new_id = tree.edges[new_id] 
-        #     prev_node = tree.vertices[new_id]
-        #     plan.insert(0,prev_node)
-        
-        # plan.append(goal_config)
-        # Filter draw plan to remove points too near to the edge of the canvas
+                
+
 
         return draw_plan
