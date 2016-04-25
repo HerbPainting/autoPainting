@@ -644,9 +644,13 @@ if __name__ == "__main__":
     def DrawRRT():
        raw_input('Press any key to begin planning')
        world_extents = planning_env.getBoundaryLimits()
+       p1 = [world_extents[0][0]+0.1,world_extents[0][1]+0.1]
+       p2 = [world_extents[1][0]-0.1,world_extents[1][1]-0.1]
        start_config = [[1,1], [3.9,3.9], [3.9,1], [1,3.9]]
        goal_config = [[3.9,3.9], [1,1], [1,3.9], [3.9,1]]
        draw_plan = planner.Plan(start_config, goal_config)
+       start_config = [[p1[0],p1[1]], [p2[0],p2[1]], [p2[0],p1[1]], [p1[0],p2[1]]]
+       goal_config = [[p2[0],p2[1]], [p1[0],p1[1]], [p1[0],p2[1]], [p2[0],p1[1]]]
   
        
        for i in xrange(len(draw_plan)):
