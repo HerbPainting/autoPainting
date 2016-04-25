@@ -689,7 +689,7 @@ if __name__ == "__main__":
         import math
         points = []
         for i in xrange(5):
-            rad = i * 3.14/10
+            rad = i * math.pi/8
             xp = math.sin(rad) * radius
             yp = math.cos(rad) * radius
             points.append((xp,yp))
@@ -802,7 +802,7 @@ if __name__ == "__main__":
         finalPoints = []
         for p in points:
             if previousPoint != None:
-                if p[0] != previousPoint[0] or p[1] != previousPoint[1]:
+                if abs(p[0] - previousPoint[0]) > 0.001 or abs(p[1] - previousPoint[1]) > 0.001 :
                     finalPoints.append(p)
             else:
                 finalPoints.append(p)
