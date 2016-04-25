@@ -15,6 +15,7 @@ import math
 import prpy
 import prpy.util
 from RRTPlanner import RRTPlanner
+from mixedRRTPlanner import mixedRRTPlanner
 from PlanningEnv import PlanningEnv
 
 
@@ -636,7 +637,7 @@ if __name__ == "__main__":
 # RRT planner
 
     planning_env = PlanningEnv()
-    planner = RRTPlanner(planning_env,3)
+    planner = mixedRRTPlanner(planning_env,4)
  
 
 
