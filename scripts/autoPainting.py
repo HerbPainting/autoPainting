@@ -352,8 +352,11 @@ class DrawingManager(object):
         currentVector = vectorizeTF(realCurrentPoint)
 
         delta = currentVector-newVector
+        print delta
         d = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2))
         normalDelta = delta/(math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2) + math.pow(delta[2],2) ))
+        print "Normal Delta"
+        print normalDelta
 
         self.currentCanvasPose = point
 
@@ -685,8 +688,8 @@ if __name__ == "__main__":
     def circle(x,y,radius):
         import math
         points = []
-        for i in xrange(21):
-            rad = i * 3.14/40
+        for i in xrange(5):
+            rad = i * 3.14/10
             xp = math.sin(rad) * radius
             yp = math.cos(rad) * radius
             points.append((xp,yp))
@@ -888,7 +891,6 @@ if __name__ == "__main__":
         Draw(B1)
         #dm.GetColor("Blue")
         Draw(B2)
-
 
 
     test = numpy.array([ 0, -1.43298366, -0.87872026,  1.2935832 , -2.41340378,-0.4731085 , -0.11837519])
