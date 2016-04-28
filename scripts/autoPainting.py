@@ -463,8 +463,6 @@ class DrawingManager(object):
         self.GetColor("Dab")
         self.GetColor("Dab")
         self.GetColor("Dab")
-        self.GetColor("Dab")
-        self.GetColor("Dab")
         
 
     def Draw(self,points):
