@@ -26,7 +26,7 @@ class mixedRRTPlanner(object):
         
         #while  distance > epsilon and len(draw_plan) < 200:
         N = 4
-        for i in xrange(N):
+        for i in xrange(1,N):
             print "Pass: ", i+1
             
             
@@ -34,7 +34,7 @@ class mixedRRTPlanner(object):
             start_config = start_config_list[i]
             goal_config = goal_config_list[i]
             tree = RRTTree(self.planning_env, start_config)
-            while len(tree.vertices) < 20:
+            while len(tree.vertices) < 25:
                 
                 r = random()
                 if r < self.planning_env.coveragep:

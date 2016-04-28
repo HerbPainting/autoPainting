@@ -9,7 +9,7 @@ class PlanningEnv(object):
     
     def __init__(self):
         
-        self.boundary_limits = numpy.array([[2., 2.], [13., 13.]])
+        self.boundary_limits = numpy.array([[1., 1.], [20., 20.]])
         # self.drawFocus = numpy.array([[5., 5.], [15., 15]] )
         #TODO: Load Costmap
         self.raster_size = 0.1
@@ -90,9 +90,11 @@ class PlanningEnv(object):
         # self.lineObstacle(0.26,0.23,0.26,0.2)
         # #finger2c  
         # self.lineObstacle(0.26,0.23,0.27,0.2)
-        self.rectObstacle(7,7,9,9)
-        self.rectObstacle(6.5,7,7,6)
-        self.rectObstacle(9,7,9.5,6)
+        self.rectObstacle(5,5,15,15)
+        #self.rectObstacle(6,6.5,6.5,5.5)
+        #self.rectObstacle(8.5,6.5,9,5.5)
+        #self.rectObstacle(7,9.5,7.5,8.5)
+        #self.rectObstacle(6,10.5,8.5,8.5)
 
 
         self.setObstacles(self.obstacleLines)

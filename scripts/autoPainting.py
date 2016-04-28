@@ -121,7 +121,17 @@ class DMConfig(object):
             self.armString = "Left"
         self.robot = robot
 
-    def config(self):
+    def _configureCanvasLocation(self):
+        self.robot.SetStiffness(0)
+        for x in ["Canvas"]:
+            raw_input('Configure ' + x + ' pose')
+            self.poses[x] = {}
+            self.poses[x]["DOF"] = self.arm.GetDOFValues()
+            self.poses[x]["TF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_arm.GetTransform())
+            self.poses[x]["HandDOF"] = self.hand.GetDOFValues()
+            self.poses[x]["HandTF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_hand.GetTransform())
+
+    def _configureColorLocation(self):
         self.robot.SetStiffness(0)
         for x in DMConfig.poses:
             raw_input('Configure ' + x + ' pose')
@@ -130,6 +140,8 @@ class DMConfig(object):
             self.poses[x]["TF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_arm.GetTransform())
             self.poses[x]["HandDOF"] = self.hand.GetDOFValues()
             self.poses[x]["HandTF"]  = numpy.dot(numpy.linalg.inv(robot.GetTransform()), robot.right_hand.GetTransform())
+    def config(self):
+        self._configureColorLocation()
         self._configurePlane()       
 
     def _adjustAndGetPoint(self):
@@ -432,17 +444,26 @@ class DrawingManager(object):
         #Table cost?
 
         self.Dip()
-        self.Spin()
+        if color != "Dab":
+            self.Spin()
         self.UnDip()
 
 
         self.arm.PlanToConfiguration(self.config["PreColor"]["DOF"],execute=True)
+
+
+        if color != "Dab":
+            self.GetColor("Dab")
         #performTraj = self._MoveAlongLine(self.config["PreColor"]["TF"])
         #self.robot.ExecutePath(performTraj)
         #UndoPremove
         #self.arm.PlanToConfiguration
     def CleanBrush(self):
         self.GetColor("Clean")
+        self.GetColor("Dab")
+        self.GetColor("Dab")
+        self.GetColor("Dab")
+        self.GetColor("Dab")
         self.GetColor("Dab")
         
 
@@ -469,62 +490,61 @@ class DrawingManager(object):
             initial = points[0]
             robot.ExecutePath(self._MoveAcrossCanvas(initial))
         except:
+            import traceback
+            traceback.print_exc()
             print "Hello"
             return
         
         
         try:
             #Save real arms
-            realRobot = self.robot
-            realArm = self.arm
+            #realRobot = self.robot
+            #realArm = self.arm
 
-            trajs = []
-            with prpy.Clone(env) as cloned_env:
+            #trajs = []
+            #with prpy.Clone(env) as cloned_env:
             
-                self.robot = prpy.Cloned(robot)
-                if self.armString == "Right":
-                    self.arm = self.robot.right_arm
-                else:
-                    self.arm = self.robot.left_arm
+            #    self.robot = prpy.Cloned(robot)
+            #    if self.armString == "Right":
+            #        self.arm = self.robot.right_arm
+            #    else:
+            #        self.arm = self.robot.left_arm
 
-                trajs.append(self._MoveToCanvas())
-                self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
-                for x in xrange(len(points) -1):
-                    index = x + 1
-                    trajs.append(self._MoveAcrossCanvas(points[index]))
-                    self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
+                #trajs.append(self._MoveToCanvas())
+                #self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
+                #for x in xrange(len(points) -1):
+                #    index = x + 1
+                #    trajs.append(self._MoveAcrossCanvas(points[index]))
+                #    self.arm.SetDOFValues(trajs[-1].GetWaypoint(trajs[-1].GetNumWaypoints()-1))
 
 
-                trajs.append(self._MoveAwayFromCanvas())
+                #trajs.append(self._MoveAwayFromCanvas())
 
-            totalTraj = trajs[0]
+            #totalTraj = trajs[0]
 
-            idx = totalTraj.GetNumWaypoints()
-            for x in xrange(len(trajs)-1):
+            #idx = totalTraj.GetNumWaypoints()
+            #for x in xrange(len(trajs)-1):
+            #    index = x + 1
+            #    for ptIndex in xrange(trajs[index].GetNumWaypoints()):
+            #        totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
+            #        idx = idx + 1
+            origLimits = self.arm.GetVelocityLimits()
+            limits = origLimits/6.0
+            self.arm.SetVelocityLimits(limits,12)
+            traj = self._MoveToCanvas()
+            robot.ExecutePath(traj)
+            for x in xrange(len(points) -1):
                 index = x + 1
-                for ptIndex in xrange(trajs[index].GetNumWaypoints()):
-                    totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
-                    idx = idx + 1
-        except:
-            print "Planning Draw Path Failed"
-            self.robot = realRobot
-            self.arm = realArm
-            import traceback
-            traceback.print_exc()
-            return
-        finally:
-            #Reset
-            self.robot = realRobot
-            self.arm = realArm
+                #trajs.append(self._MoveAcrossCanvas(points[index]))
+                traj = self._MoveAcrossCanvas(points[index])
+                robot.ExecutePath(traj)
 
-        performTraj = prpy.util.CopyTrajectory(totalTraj,env=robot.GetEnv())
-        origLimits = self.arm.GetVelocityLimits()
-        try:
-            #Set the speed limits,  this should be controled by the --sim argument
-            limits = origLimits/2
-            self.arm.SetVelocityLimits(limits,8)
+            traj = self._MoveAwayFromCanvas()
+            robot.ExecutePath(traj)
 
-            robot.ExecutePath(performTraj)
+        #performTraj = prpy.util.CopyTrajectory(totalTraj,env=robot.GetEnv())
+        #origLimits = self.arm.GetVelocityLimits()
+       
         except:
             print "Actual Draw Had Issue"
         finally:
@@ -628,7 +648,7 @@ if __name__ == "__main__":
     table.SetTransform(table_pose)
 
     #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,"Final")
+    dm = DrawingManager(env,robot,robot.right_arm,"FinalFinal5")
     
 
 
@@ -652,7 +672,9 @@ if __name__ == "__main__":
        goal_config = [[p2[0],p2[1]], [p1[0],p1[1]], [p1[0],p2[1]], [p2[0],p1[1]]]
        draw_plan = planner.Plan(start_config, goal_config)
   
-       
+       colors = ["Yellow","Blue","Red"]
+       time = 4
+       superCount = 0
        for i in xrange(len(draw_plan)):
        	   arr1=numpy.asarray(draw_plan[i][0])
        	   arr2=numpy.asarray(draw_plan[i][1])
@@ -664,7 +686,15 @@ if __name__ == "__main__":
            path_RRT= [arr1,arr2]
            
            print path_RRT
+           time = time -1
            dm.Draw(path_RRT)
+           
+           if time <= 0:     
+                superCount = superCount + 1
+                dm.CleanBrush()
+                dm.GetColor(colors[superCount%3])
+                time = 4
+                
        
     dmConfig = DMConfig(robot,robot.right_arm,robot.right_hand)
     def HandPre():
@@ -815,21 +845,21 @@ if __name__ == "__main__":
         return finalPoints
 
     def DrawHerb():
-        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,0.5),-0.01,0.02))))
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,0.6),0.0,0.01))))
         
         dm.GetColor("Blue")
         Draw(body)
-        #dm.GetColor("Blue")
+        dm.GetColor("Red")
         Draw(tire1)
-        #dm.GetColor("Blue")
+        dm.GetColor("Red")
         Draw(tire2)
-        #dm.GetColor("Blue")
+        dm.GetColor("Yellow")
         Draw(head)
-        #dm.GetColor("Blue")
+        dm.GetColor("Yellow")
         Draw(neck)
-        #dm.GetColor("Blue")
+        dm.GetColor("Blue")
         Draw(arm1a + arm2a+finger1b)
-        #dm.GetColor("Blue")
+        dm.GetColor("Blue")
         Draw(arm1b + arm2b + finger2b)
         #dm.GetColor("Blue")
         #Draw(arm2a)
@@ -900,27 +930,28 @@ if __name__ == "__main__":
 
     def DrawHerbName2():
         
-        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.00))))
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.06))))
         #Herb Word
-        H1 = line(0.02,0.05,0.02,0.0)
-        H2 = line(0.02,0.025,0.04,0.025)
-        H3 = line(0.04,0.05,0.04,0.0)
+        
+        #H1 = line(0.02,0.05,0.02,0.0)
+        #H2 = line(0.02,0.025,0.04,0.025)
+        #H3 = line(0.04,0.05,0.04,0.0)
 
+        #dm.GetColor("Blue")
+        #Draw(H1)
+        #Draw(H2)
+        #Draw(H3)
 
-        Draw(H1)
-        Draw(H2)
-        Draw(H3)
-
-        E1 = line(0.06,0.05,0.06,0.0)
-        E2 = line(0.06,0.05,0.08,0.05)
-        E3 = line(0.06,0.025,0.08,0.025)
+        #E1 = line(0.06,0.05,0.06,0.0)
+        #E2 = line(0.06,0.05,0.08,0.05)
+        #E3 = line(0.06,0.025,0.08,0.025)
         E4 = line(0.06,0.00,0.08,0.00)
         #E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
 
-
-        Draw(E1)
-        Draw(E2)
-        Draw(E3)
+        #dm.GetColor("Red")
+        #Draw(E1)
+        #Draw(E2)
+        #Draw(E3)
         Draw(E4)
 
 
@@ -938,7 +969,7 @@ if __name__ == "__main__":
         #x = R1[-1][0]
 
         #R2 = line(x,0.025,x,0.0)
-
+        dm.GetColor("Yellow")
         Draw(R1)
         Draw(R2)
         Draw(R3)
@@ -947,13 +978,13 @@ if __name__ == "__main__":
 
 
 
-        B1 = line(0.14,0.05,0.14,0.0)
-        B2 = line(0.14,0.05,0.16,0.05*3.0/4.0)
-        B3 = line(0.14,0.025,0.16,0.05*3.0/4.0)
-        B4 = line(0.14,0.025,0.16,0.05*1.0/4.0)
-        B5 = line(0.14,0.0,0.16,0.05*1.0/4.0)
+        B1 = line(0.15,0.05,0.15,0.0)
+        B2 = line(0.15,0.05,0.17,0.05*3.0/4.0)
+        B3 = line(0.15,0.025,0.17,0.05*3.0/4.0)
+        B4 = line(0.15,0.025,0.17,0.05*1.0/4.0)
+        B5 = line(0.15,0.0,0.17,0.05*1.0/4.0)
 
-        
+        dm.GetColor("Blue")    
         Draw(B1)
         Draw(B2)
         Draw(B3)
