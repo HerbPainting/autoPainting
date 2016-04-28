@@ -707,7 +707,7 @@ if __name__ == "__main__":
     table.SetTransform(table_pose)
 
     #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,"FirstFinalStraightOnFlat")
+    dm = DrawingManager(env,robot,robot.right_arm,"RealFinal")
     
 
 
@@ -732,7 +732,7 @@ if __name__ == "__main__":
        draw_plan = planner.Plan(start_config, goal_config)
   
        colors = ["Yellow","Blue","Red"]
-       time = 4
+       time = 3
        superCount = 0
        for i in xrange(len(draw_plan)):
        	   arr1=numpy.asarray(draw_plan[i][0])
@@ -752,7 +752,7 @@ if __name__ == "__main__":
                 superCount = superCount + 1
                 dm.CleanBrush()
                 dm.GetColor(colors[superCount%3])
-                time = 4
+                time = 3
                 
        
     dmConfig = DMConfig(robot,robot.right_arm,robot.right_hand)
