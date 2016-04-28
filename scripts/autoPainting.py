@@ -321,11 +321,14 @@ class DrawingManager(object):
         self.currentCanvasPose = numpy.array([0,0])
         tf = numpy.dot(tf,getYRotation(math.pi/2))
         traj = self._MoveAlongLine(tf)
-        self.robot.ExecutePath(traj)
+        
+        self.arm.SetDOFValues(traj.GetWaypoint(traj.GetNumWaypoints()-1))
+        #self.robot.ExecutePath(traj)
 
         traj = self._PlanToEndEffectorPose(tf)
+        return traj
         #traj = self.arm.PlanToEndEffectorOffset([0,0,1],0.01)
-        self.robot.ExecutePath(traj)
+        #self.robot.ExecutePath(traj)
         #return self._PlanToEndEffectorPose(tf)
     
     def _MoveAlongLine(self,point):
@@ -474,19 +477,77 @@ class DrawingManager(object):
 
         points = finalPoints
             
+
+
+
+
+
+
+
+
+
+
+        initalDOF = []
+
+
+        try:
+            #Save real arms
+            realRobot = self.robot
+            realArm = self.arm
+
+
+            trajs = []
+            with prpy.Clone(env) as cloned_env:
+            
+                self.robot = prpy.Cloned(robot)
+                if self.armString == "Right":
+                    self.arm = self.robot.right_arm
+                else:
+                    self.arm = self.robot.left_arm
+
+
+                traj = self.arm.PlanToConfiguration(self.config["Canvas"]["DOF"])
+                self.arm.SetDOFValues(traj.GetWaypoint(traj.GetNumWaypoints()-1))
+
+                
+                initial = points[0]
+                traj = self._MoveToInitialPreDraw(initial)
+                self.arm.SetDOFValues(traj.GetWaypoint(traj.GetNumWaypoints()-1))
+
+
+                #self.currentCanvasPose = initial
+                #initalPreDrawPath = self._MoveToInitialPreDraw()        
+                #robot.ExecutePath(initalPreDrawPath)
+
+                #Move to the initial point of the pathls
+                initial = points[0]
+                traj = self._MoveAcrossCanvas(initial)
+                initalDOF = traj.GetWaypoint(traj.GetNumWaypoints()-1)
+
+
+        except:
+            print "Planning Draw Path Failed"
+            self.robot = realRobot
+            self.arm = realArm
+            import traceback
+            traceback.print_exc()
+            return
+        finally:
+            #Reset
+            self.robot = realRobot
+            self.arm = realArm
+
+
+
+        self.arm.PlanToConfiguration(initalDOF,execute=True)
+
+
+
         #Move to the offset center of the plane
         try:
-            self.arm.PlanToConfiguration(self.config["Canvas"]["DOF"],execute=True)
-            #self.arm.hand.PlanToConfiguration(self.config["Canvas"]["HandDOF"],execute=True)
-            initial = points[0]
-            self._MoveToInitialPreDraw(initial)
-            #self.currentCanvasPose = initial
-            #initalPreDrawPath = self._MoveToInitialPreDraw()        
-            #robot.ExecutePath(initalPreDrawPath)
-
-            #Move to the initial point of the path
-            initial = points[0]
-            robot.ExecutePath(self._MoveAcrossCanvas(initial))
+            
+            self.arm.PlanToConfiguration(initalDOF,execute=True)
+           
         except:
             import traceback
             traceback.print_exc()
@@ -646,7 +707,7 @@ if __name__ == "__main__":
     table.SetTransform(table_pose)
 
     #dm = DrawingManager(env,robot,robot.right_arm,numpy.array([1.0,-1,-1]),numpy.array([0.7,0.0,1]),numpy.array([0.2,0.2]))
-    dm = DrawingManager(env,robot,robot.right_arm,"FinalFinal5")
+    dm = DrawingManager(env,robot,robot.right_arm,"FirstFinalStraightOnFlat")
     
 
 
@@ -931,25 +992,25 @@ if __name__ == "__main__":
         Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.06))))
         #Herb Word
         
-        #H1 = line(0.02,0.05,0.02,0.0)
-        #H2 = line(0.02,0.025,0.04,0.025)
-        #H3 = line(0.04,0.05,0.04,0.0)
+        H1 = line(0.02,0.05,0.02,0.0)
+        H2 = line(0.02,0.025,0.04,0.025)
+        H3 = line(0.04,0.05,0.04,0.0)
 
-        #dm.GetColor("Blue")
-        #Draw(H1)
-        #Draw(H2)
-        #Draw(H3)
+        dm.GetColor("Blue")
+        Draw(H1)
+        Draw(H2)
+        Draw(H3)
 
-        #E1 = line(0.06,0.05,0.06,0.0)
-        #E2 = line(0.06,0.05,0.08,0.05)
-        #E3 = line(0.06,0.025,0.08,0.025)
+        E1 = line(0.06,0.05,0.06,0.0)
+        E2 = line(0.06,0.05,0.08,0.05)
+        E3 = line(0.06,0.025,0.08,0.025)
         E4 = line(0.06,0.00,0.08,0.00)
-        #E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
+        E2 = line(0.06-0.025/2.0,0.025/2.0,0.06+0.025/2.0,0.025/2.0)
 
-        #dm.GetColor("Red")
-        #Draw(E1)
-        #Draw(E2)
-        #Draw(E3)
+        dm.GetColor("Red")
+        Draw(E1)
+        Draw(E2)
+        Draw(E3)
         Draw(E4)
 
 
