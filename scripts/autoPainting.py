@@ -476,15 +476,7 @@ class DrawingManager(object):
             finalPoints.append(numpy.array([x,-y]))
 
         points = finalPoints
-            
-
-
-
-
-
-
-
-
+           
 
 
         initalDOF = []
@@ -587,9 +579,9 @@ class DrawingManager(object):
             #    for ptIndex in xrange(trajs[index].GetNumWaypoints()):
             #        totalTraj.Insert(idx,trajs[index].GetWaypoint(ptIndex))
             #        idx = idx + 1
-            origLimits = self.arm.GetVelocityLimits()
-            limits = origLimits/6.0
-            self.arm.SetVelocityLimits(limits,12)
+            #origLimits = self.arm.GetVelocityLimits()
+            #limits = origLimits/2.0
+            #self.arm.SetVelocityLimits(limits,3)
             traj = self._MoveToCanvas()
             robot.ExecutePath(traj)
             for x in xrange(len(points) -1):
@@ -607,7 +599,8 @@ class DrawingManager(object):
         except:
             print "Actual Draw Had Issue"
         finally:
-            self.arm.SetVelocityLimits(origLimits,2)
+            pass
+            #self.arm.SetVelocityLimits(origLimits,2)
 
 
 if __name__ == "__main__":
@@ -738,6 +731,10 @@ if __name__ == "__main__":
        	   arr1=numpy.asarray(draw_plan[i][0])
        	   arr2=numpy.asarray(draw_plan[i][1])
 
+           delta = arr1-arr2
+           dist = math.sqrt(math.pow(delta[0],2) + math.pow(delta[1],2))
+           if dist < 0.01:
+                continue
            print "STarting debug message"
            print arr1
            print arr2
@@ -904,7 +901,7 @@ if __name__ == "__main__":
         return finalPoints
 
     def DrawHerb():
-        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,0.6),0.0,0.01))))
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,0.66),0.01,0.01))))
         
         dm.GetColor("Blue")
         Draw(body)
@@ -989,7 +986,7 @@ if __name__ == "__main__":
 
     def DrawHerbName2():
         
-        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.06))))
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.22,.10))))
         #Herb Word
         
         H1 = line(0.02,0.05,0.02,0.0)
@@ -1083,11 +1080,33 @@ if __name__ == "__main__":
         # print randPoints
         return randPoints
 
+    def DrawRects():
+        colors = ["Yellow","Blue","Red"]
+        time = 3
+        superCount = 0
+
+        first_points = DrawRandomPoints(10)
+        second_points = DrawRandomPoints(10)
+        Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.06))))
+        for (p1,p2) in zip(first_points,second_points):
+            Draw(rect(p1[0]/100.0,p1[1]/100.0,p2[0]/100.0,p2[1]/100.0))
+            time = time - 1
+            if time <= 0:     
+                superCount = superCount + 1
+                dm.CleanBrush()
+                dm.GetColor(colors[superCount%3])
+                time = 3
+        
+        
+
+
+        
     def DrawPoints():
         dm.GetColor("Blue");
         first_points = DrawRandomPoints(10);
         Draw = lambda r: dm.Draw(Sanitize(convertPoints(Offset(Scale(r,1),0.00,.06))))
         for x,y in first_points:
+
             Draw([numpy.array([float(x)/100,float(y)/100])]) 
             # a = numpy.array([x,y])
             # print [a]

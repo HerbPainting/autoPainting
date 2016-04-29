@@ -95,7 +95,9 @@ class PlanningEnv(object):
         #self.rectObstacle(8.5,6.5,9,5.5)
         #self.rectObstacle(7,9.5,7.5,8.5)
         #self.rectObstacle(6,10.5,8.5,8.5)
-
+        #self.rectObstacle(8,8,12,12)
+        #self.rectObstacle(7,8,8,5)
+        #self.rectObstacle(12,8,9,5)
 
         self.setObstacles(self.obstacleLines)
         self.bloatedCostMap = self.createBloatedCostMap(self.costmap,4)
